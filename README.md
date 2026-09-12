@@ -23,3 +23,8 @@ npm run db:types                                    # regenerate TS types
 ```
 
 See [AGENTS.md](./AGENTS.md) for architecture, conventions, and security rules.
+
+## Deploy
+
+Production: https://asclepius-green.vercel.app (Vercel, auto-deploys from `main`).
+Required Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
