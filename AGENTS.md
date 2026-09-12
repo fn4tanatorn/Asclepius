@@ -35,6 +35,7 @@ supabase migration new <name>
 - Project ref `tbyqvtgafqcgvpqqmhfi`, region ap-northeast-2, URL `https://tbyqvtgafqcgvpqqmhfi.supabase.co`
 - CLI is linked (`supabase/.temp` is git-ignored). Config in `supabase/config.toml`.
 - Env vars (see `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. The publishable key is safe in the browser; RLS is the security boundary. `SUPABASE_SECRET_KEY` is server-only and must never be imported into client code.
+- **Never run `supabase config push`.** It applies the whole `config.toml` auth section to the hosted project and, when stdin is not a TTY, does so without asking. `config.toml` is for local dev only. Change hosted auth settings in the Supabase Dashboard (or a targeted Management API PATCH).
 - **Never commit `.env.local`** or paste the secret key / DB password into code, docs, or chat logs.
 
 ### Clients
