@@ -58,6 +58,16 @@ supabase migration new <name>
 - Students only ever see `is_published = true` content. Staff (`is_staff()`) see everything.
 - Video files live in the private `videos` bucket; serve with signed URLs, never public URLs.
 
+### Auth
+
+- Methods: **Google OAuth** and **Magic Link** only. No passwords. Users use personal email (no domain restriction).
+- `src/app/login/` — page + Server Functions `signInWithGoogle` / `sendMagicLink`.
+- `src/app/auth/callback/route.ts` — handles PKCE `code` (Google, magic link) and `token_hash`+`type`. Always pass `?next=` and sanitize it with `safeNextPath()`.
+- `src/app/auth/signout/route.ts` — POST only.
+- `requireUser()` from `src/lib/auth/require-user.ts` in every protected Server Component / Server Function.
+- Redirect URLs must be allow-listed in Supabase Dashboard → Authentication → URL Configuration (`<site>/auth/callback` for every deployed origin, plus localhost).
+- Google provider is configured in Supabase Dashboard → Authentication → Providers (Client ID/Secret from Google Cloud Console). Not stored in this repo.
+
 ## Conventions
 
 - Schema changes go in a new file under `supabase/migrations/` (`supabase migration new <name>`), then `supabase db push`, then `npm run db:types`. Do not edit the dashboard by hand.
