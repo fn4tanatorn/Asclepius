@@ -11,10 +11,10 @@ const ADMIN_NAV = [
 ];
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
-  const { user, role, fullName } = await requireStaff("/admin");
+  const { user, role, fullName, lineName } = await requireStaff("/admin");
   return (
     <>
-      <AppHeader user={user} role={role} fullName={fullName} />
+      <AppHeader user={user} role={role} fullName={fullName} lineName={lineName} />
       <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         <nav className="mb-6 flex flex-wrap gap-2 border-b border-zinc-200 pb-4 text-sm dark:border-zinc-800">
           {ADMIN_NAV.map((n) => (

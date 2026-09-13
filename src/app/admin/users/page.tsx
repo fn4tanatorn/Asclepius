@@ -14,7 +14,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/admin
   const { supabase, role, user } = await requireStaff("/admin/users");
   const { data: users } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, created_at")
+    .select("id, full_name, email, line_name, role, created_at")
     .order("created_at", { ascending: false })
     .limit(500);
   const isAdmin = role === "admin";
@@ -35,6 +35,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/admin
             <tr>
               <th className="px-4 py-2 font-medium">ชื่อ</th>
               <th className="px-4 py-2 font-medium">อีเมล</th>
+              <th className="px-4 py-2 font-medium">LINE</th>
               <th className="px-4 py-2 font-medium">สมัครเมื่อ</th>
               <th className="px-4 py-2 font-medium">บทบาท</th>
             </tr>
@@ -44,6 +45,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/admin
               <tr key={u.id}>
                 <td className="px-4 py-2 font-medium">{u.full_name || <span className="text-zinc-400">-</span>}{u.id === user.id && <span className="ml-2 text-xs text-zinc-500">(คุณ)</span>}</td>
                 <td className="px-4 py-2 text-zinc-600 dark:text-zinc-400">{u.email ?? "-"}</td>
+                <td className="px-4 py-2">{u.line_name || <span className="text-amber-600">ยังไม่กรอก</span>}</td>
                 <td className="px-4 py-2 text-zinc-500">{formatDateTime(u.created_at)}</td>
                 <td className="px-4 py-2">
                   {isAdmin && u.id !== user.id ? (

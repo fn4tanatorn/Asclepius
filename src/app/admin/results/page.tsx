@@ -13,7 +13,7 @@ export default async function AdminResultsPage({ searchParams }: PageProps<"/adm
 
   let q = supabase
     .from("exam_attempts")
-    .select("id, score, passed, started_at, submitted_at, exams(id, slug, title), profiles(full_name, email)")
+    .select("id, score, passed, started_at, submitted_at, exams(id, slug, title), profiles(full_name, email, line_name)")
     .not("submitted_at", "is", null)
     .order("submitted_at", { ascending: false })
     .limit(200);
@@ -66,7 +66,7 @@ export default async function AdminResultsPage({ searchParams }: PageProps<"/adm
                 <tr key={a.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900">
                   <td className="px-4 py-2">
                     <span className="block font-medium">{a.profiles?.full_name || "ไม่ระบุชื่อ"}</span>
-                    <span className="block text-xs text-zinc-500">{a.profiles?.email}</span>
+                    <span className="block text-xs text-zinc-500">{a.profiles?.email}{a.profiles?.line_name ? ` · LINE: ${a.profiles.line_name}` : ""}</span>
                   </td>
                   <td className="px-4 py-2"><Link href={`/exam/${a.exams?.slug}/attempt/${a.id}`} className="hover:underline">{a.exams?.title}</Link></td>
                   <td className="px-4 py-2 text-zinc-500">{formatDateTime(a.submitted_at)}</td>

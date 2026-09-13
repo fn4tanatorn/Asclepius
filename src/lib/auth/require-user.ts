@@ -17,7 +17,7 @@ const getSession = cache(async () => {
 /** Profile row for the signed-in user, fetched at most once per request. */
 export const getProfile = cache(async (userId: string) => {
   const { supabase } = await getSession();
-  const { data } = await supabase.from("profiles").select("role, full_name").eq("id", userId).single();
+  const { data } = await supabase.from("profiles").select("role, full_name, line_name").eq("id", userId).single();
   return data;
 });
 
@@ -47,5 +47,5 @@ export async function requireStaff(nextPath?: string) {
   if (role !== "instructor" && role !== "admin") {
     redirect("/learn?error=forbidden");
   }
-  return { supabase, user, role, fullName: profile?.full_name ?? "" };
+  return { supabase, user, role, fullName: profile?.full_name ?? "", lineName: profile?.line_name ?? null };
 }

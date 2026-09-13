@@ -17,7 +17,7 @@ export default async function AdminHome() {
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase
       .from("exam_attempts")
-      .select("id, score, passed, submitted_at, exams(slug, title), profiles(full_name, email)")
+      .select("id, score, passed, submitted_at, exams(slug, title), profiles(full_name, email, line_name)")
       .not("submitted_at", "is", null)
       .order("submitted_at", { ascending: false })
       .limit(8),
@@ -62,7 +62,7 @@ export default async function AdminHome() {
               <li key={a.id}>
                 <Link href={`/exam/${a.exams?.slug}/attempt/${a.id}`} className="flex items-center gap-4 px-5 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900">
                   <span className="flex-1 truncate">
-                    <span className="font-medium">{a.profiles?.full_name || a.profiles?.email || "ไม่ทราบชื่อ"}</span>
+                    <span className="font-medium">{a.profiles?.full_name || a.profiles?.email || "ไม่ทราบชื่อ"}</span>{a.profiles?.line_name && <span className="text-zinc-500"> (LINE: {a.profiles.line_name})</span>}
                     <span className="text-zinc-500"> · {a.exams?.title}</span>
                   </span>
                   <span className="text-zinc-500">{formatDateTime(a.submitted_at)}</span>

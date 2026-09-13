@@ -11,7 +11,7 @@ export async function AppShell({ children, nextPath }: { children: React.ReactNo
 
   return (
     <>
-      <AppHeader user={user} role={profile?.role ?? "student"} fullName={profile?.full_name} />
+      <AppHeader user={user} role={profile?.role ?? "student"} fullName={profile?.full_name} lineName={profile?.line_name ?? null} />
       <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</div>
     </>
   );
