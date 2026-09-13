@@ -273,9 +273,17 @@ async function validateExamForPublish(
   supabase: Awaited<ReturnType<typeof requireStaff>>["supabase"],
   examId: string,
 ): Promise<string | null> {
-  const { data: qs } = await supabase.from("questions").select("id, position, choices(id, is_correct)").eq("exam_id", examId).order("position");
+  const { data: qs } = await supabase
+    .from("questions")
+    .select("id, kind, position, choices(id, is_correct), answer_keys(id)")
+    .eq("exam_id", examId)
+    .order("position");
   if (!qs?.length) return "ต้องมีคำถามอย่างน้อย 1 ข้อก่อนเผยแพร่";
   for (const [i, q] of qs.entries()) {
+    if (q.kind === "text") {
+      if (q.answer_keys.length === 0) return `ข้อ ${i + 1} ต้องมีเฉลยอย่างน้อย 1 คำตอบ`;
+      continue;
+    }
     if (q.choices.length < 2) return `ข้อ ${i + 1} ต้องมีตัวเลือกอย่างน้อย 2 ตัว`;
     const correct = q.choices.filter((c) => c.is_correct).length;
     if (correct !== 1) return `ข้อ ${i + 1} ต้องมีคำตอบที่ถูกต้อง 1 ตัวเลือก (ตอนนี้มี ${correct})`;
@@ -286,6 +294,9 @@ async function validateExamForPublish(
 export async function deleteExam(formData: FormData) {
   const { supabase } = await requireStaff();
   const id = str(formData, "id");
+  const { data: qs } = await supabase.from("questions").select("image_path").eq("exam_id", id);
+  const imgs = (qs ?? []).map((q) => q.image_path).filter((p): p is string => !!p);
+  if (imgs.length) await supabase.storage.from("question-images").remove(imgs);
   const { error } = await supabase.from("exams").delete().eq("id", id);
   if (error) redirect(withMsg(`/admin/exams/${id}`, "error", "ลบไม่สำเร็จ"));
   revalidatePath("/admin/exams");
@@ -306,15 +317,43 @@ function readChoices(formData: FormData) {
     .map((c, i) => ({ ...c, position: i }));
 }
 
+/** One accepted answer per line. */
+function readAnswerKeys(formData: FormData) {
+  const seen = new Set<string>();
+  return str(formData, "answer_keys")
+    .split(/\r?\n/)
+    .map((a) => a.trim())
+    .filter((a) => a && !seen.has(a.toLowerCase()) && seen.add(a.toLowerCase()))
+    .map((answer, position) => ({ answer, position }));
+}
+
+function readKind(formData: FormData): Database["public"]["Enums"]["question_kind"] {
+  return str(formData, "kind") === "text" ? "text" : "choice";
+}
+
+/** Only accept image paths inside this exam's folder (uploaded by ImageField). */
+function readImagePath(formData: FormData, examId: string) {
+  const p = optStr(formData, "image_path");
+  return p && p.startsWith(`${examId}/`) && !p.includes("..") ? p : null;
+}
+
 export async function createQuestion(formData: FormData) {
   const { supabase } = await requireStaff();
   const examId = str(formData, "exam_id");
   const path = `/admin/exams/${examId}`;
   const stem = str(formData, "stem");
-  const choices = readChoices(formData);
+  const kind = readKind(formData);
+  const imagePath = readImagePath(formData, examId);
   if (!stem) redirect(withMsg(path, "error", "กรุณากรอกโจทย์"));
-  if (choices.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
-  if (!choices.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+
+  const choices = kind === "choice" ? readChoices(formData) : [];
+  const keys = kind === "text" ? readAnswerKeys(formData) : [];
+  if (kind === "choice") {
+    if (choices.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
+    if (!choices.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+  } else if (keys.length === 0) {
+    redirect(withMsg(path, "error", "กรุณาใส่เฉลยอย่างน้อย 1 คำตอบ"));
+  }
 
   const { data: last } = await supabase
     .from("questions").select("position").eq("exam_id", examId).order("position", { ascending: false }).limit(1).maybeSingle();
@@ -323,7 +362,9 @@ export async function createQuestion(formData: FormData) {
     .from("questions")
     .insert({
       exam_id: examId,
+      kind,
       stem,
+      image_path: imagePath,
       explanation: optStr(formData, "explanation"),
       points: num(formData, "points") ?? 1,
       position: (last?.position ?? -1) + 1,
@@ -332,10 +373,13 @@ export async function createQuestion(formData: FormData) {
     .single();
   if (error || !q) redirect(withMsg(path, "error", "เพิ่มคำถามไม่สำเร็จ"));
 
-  const { error: cErr } = await supabase.from("choices").insert(choices.map((c) => ({ ...c, question_id: q.id })));
-  if (cErr) {
+  const { error: subErr } =
+    kind === "choice"
+      ? await supabase.from("choices").insert(choices.map((c) => ({ ...c, question_id: q.id })))
+      : await supabase.from("answer_keys").insert(keys.map((k) => ({ ...k, question_id: q.id })));
+  if (subErr) {
     await supabase.from("questions").delete().eq("id", q.id);
-    redirect(withMsg(path, "error", "เพิ่มตัวเลือกไม่สำเร็จ"));
+    redirect(withMsg(path, "error", kind === "choice" ? "เพิ่มตัวเลือกไม่สำเร็จ" : "เพิ่มเฉลยไม่สำเร็จ"));
   }
   revalidatePath(path);
   redirect(withMsg(path, "ok", "เพิ่มคำถามแล้ว") + `#q-${q.id}`);
@@ -349,33 +393,43 @@ export async function updateQuestion(formData: FormData) {
   const stem = str(formData, "stem");
   if (!stem) redirect(withMsg(path, "error", "กรุณากรอกโจทย์"));
 
-  // Choices: existing rows carry choice_id[]; body/correct are parallel arrays.
-  const ids = formData.getAll("choice_id").map((v) => v.toString());
-  const bodies = formData.getAll("choice_body").map((v) => v.toString().trim());
-  const correctIdx = Number(str(formData, "correct"));
-  const kept = bodies.map((body, i) => ({ id: ids[i] || null, body, is_correct: i === correctIdx })).filter((c) => c.body);
-  if (kept.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
-  if (!kept.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+  const { data: current } = await supabase.from("questions").select("kind, image_path").eq("id", id).maybeSingle();
+  if (!current) redirect(withMsg(path, "error", "ไม่พบคำถาม"));
+  const kind = current.kind; // kind is fixed after creation
+  const imagePath = readImagePath(formData, examId);
+
+  if (kind === "choice") {
+    const ids = formData.getAll("choice_id").map((v) => v.toString());
+    const bodies = formData.getAll("choice_body").map((v) => v.toString().trim());
+    const correctIdx = Number(str(formData, "correct"));
+    const kept = bodies.map((body, i) => ({ id: ids[i] || null, body, is_correct: i === correctIdx })).filter((c) => c.body);
+    if (kept.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
+    if (!kept.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+
+    const keepIds = kept.map((c) => c.id).filter((x): x is string => !!x);
+    const { data: existing } = await supabase.from("choices").select("id").eq("question_id", id);
+    const toDelete = (existing ?? []).map((c) => c.id).filter((cid) => !keepIds.includes(cid));
+    if (toDelete.length) await supabase.from("choices").delete().in("id", toDelete);
+    for (const [i, c] of kept.entries()) {
+      if (c.id) await supabase.from("choices").update({ body: c.body, is_correct: c.is_correct, position: i }).eq("id", c.id);
+      else await supabase.from("choices").insert({ question_id: id, body: c.body, is_correct: c.is_correct, position: i });
+    }
+  } else {
+    const keys = readAnswerKeys(formData);
+    if (keys.length === 0) redirect(withMsg(path, "error", "กรุณาใส่เฉลยอย่างน้อย 1 คำตอบ"));
+    await supabase.from("answer_keys").delete().eq("question_id", id);
+    const { error: kErr } = await supabase.from("answer_keys").insert(keys.map((k) => ({ ...k, question_id: id })));
+    if (kErr) redirect(withMsg(path, "error", "บันทึกเฉลยไม่สำเร็จ"));
+  }
 
   const { error } = await supabase
     .from("questions")
-    .update({ stem, explanation: optStr(formData, "explanation"), points: num(formData, "points") ?? 1 })
+    .update({ stem, image_path: imagePath, explanation: optStr(formData, "explanation"), points: num(formData, "points") ?? 1 })
     .eq("id", id);
   if (error) redirect(withMsg(path, "error", "บันทึกไม่สำเร็จ"));
 
-  // Delete removed choices (only ones with no answers referencing them are safe;
-  // attempt_answers.choice_id is ON DELETE SET NULL so this never fails).
-  const keepIds = kept.map((c) => c.id).filter((x): x is string => !!x);
-  const { data: existing } = await supabase.from("choices").select("id").eq("question_id", id);
-  const toDelete = (existing ?? []).map((c) => c.id).filter((cid) => !keepIds.includes(cid));
-  if (toDelete.length) await supabase.from("choices").delete().in("id", toDelete);
-
-  for (const [i, c] of kept.entries()) {
-    if (c.id) {
-      await supabase.from("choices").update({ body: c.body, is_correct: c.is_correct, position: i }).eq("id", c.id);
-    } else {
-      await supabase.from("choices").insert({ question_id: id, body: c.body, is_correct: c.is_correct, position: i });
-    }
+  if (current.image_path && current.image_path !== imagePath) {
+    await supabase.storage.from("question-images").remove([current.image_path]);
   }
   revalidatePath(path);
   redirect(withMsg(path, "ok", "บันทึกคำถามแล้ว") + `#q-${id}`);
@@ -386,8 +440,10 @@ export async function deleteQuestion(formData: FormData) {
   const id = str(formData, "id");
   const examId = str(formData, "exam_id");
   const path = `/admin/exams/${examId}`;
+  const { data: q } = await supabase.from("questions").select("image_path").eq("id", id).maybeSingle();
   const { error } = await supabase.from("questions").delete().eq("id", id);
   if (error) redirect(withMsg(path, "error", "ลบไม่สำเร็จ"));
+  if (q?.image_path) await supabase.storage.from("question-images").remove([q.image_path]);
   revalidatePath(path);
   redirect(withMsg(path, "ok", "ลบคำถามแล้ว"));
 }

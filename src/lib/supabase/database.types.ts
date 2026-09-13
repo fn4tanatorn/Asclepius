@@ -14,24 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      answer_keys: {
+        Row: {
+          answer: string
+          id: string
+          position: number
+          question_id: string
+        }
+        Insert: {
+          answer: string
+          id?: string
+          position?: number
+          question_id: string
+        }
+        Update: {
+          answer?: string
+          id?: string
+          position?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_keys_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_answers: {
         Row: {
           answered_at: string
           attempt_id: string
           choice_id: string | null
+          is_correct: boolean | null
           question_id: string
+          text_answer: string | null
         }
         Insert: {
           answered_at?: string
           attempt_id: string
           choice_id?: string | null
+          is_correct?: boolean | null
           question_id: string
+          text_answer?: string | null
         }
         Update: {
           answered_at?: string
           attempt_id?: string
           choice_id?: string | null
+          is_correct?: boolean | null
           question_id?: string
+          text_answer?: string | null
         }
         Relationships: [
           {
@@ -272,6 +307,8 @@ export type Database = {
           exam_id: string
           explanation: string | null
           id: string
+          image_path: string | null
+          kind: Database["public"]["Enums"]["question_kind"]
           points: number
           position: number
           stem: string
@@ -281,6 +318,8 @@ export type Database = {
           exam_id: string
           explanation?: string | null
           id?: string
+          image_path?: string | null
+          kind?: Database["public"]["Enums"]["question_kind"]
           points?: number
           position?: number
           stem: string
@@ -290,6 +329,8 @@ export type Database = {
           exam_id?: string
           explanation?: string | null
           id?: string
+          image_path?: string | null
+          kind?: Database["public"]["Enums"]["question_kind"]
           points?: number
           position?: number
           stem?: string
@@ -419,6 +460,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       is_staff: { Args: never; Returns: boolean }
+      normalize_answer: { Args: { p: string }; Returns: string }
       submit_exam_attempt: {
         Args: { p_attempt_id: string }
         Returns: {
@@ -439,6 +481,7 @@ export type Database = {
       }
     }
     Enums: {
+      question_kind: "choice" | "text"
       user_role: "student" | "instructor" | "admin"
     }
     CompositeTypes: {
@@ -567,6 +610,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      question_kind: ["choice", "text"],
       user_role: ["student", "instructor", "admin"],
     },
   },

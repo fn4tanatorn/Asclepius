@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/require-user";
 import { formatDateTime, formatScore } from "@/lib/format";
 import { badge, btn, card } from "@/components/ui";
+import { signQuestionImages } from "@/lib/storage";
 import { ExamRunner, type RunnerQuestion } from "./exam-runner";
 
 export const metadata: Metadata = { title: "ทำข้อสอบ" };
@@ -24,18 +25,19 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
 
   const { data: questions } = await supabase
     .from("questions")
-    .select("id, stem, explanation, points, position")
+    .select("id, kind, stem, explanation, points, position, image_path")
     .eq("exam_id", exam.id)
     .order("position");
   const qIds = new Set((questions ?? []).map((q) => q.id));
 
-  const [{ data: choices }, { data: answers }] = await Promise.all([
+  const [{ data: choices }, { data: answers }, imageUrls] = await Promise.all([
     supabase
       .from("exam_choices")
       .select("id, question_id, body, position")
       .in("question_id", [...qIds])
       .order("position"),
-    supabase.from("attempt_answers").select("question_id, choice_id").eq("attempt_id", attempt.id),
+    supabase.from("attempt_answers").select("question_id, choice_id, text_answer, is_correct").eq("attempt_id", attempt.id),
+    signQuestionImages(supabase, (questions ?? []).map((q) => q.image_path)),
   ]);
   const choicesByQ = new Map<string, { id: string; body: string }[]>();
   for (const c of choices ?? []) {
@@ -45,12 +47,19 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
     choicesByQ.set(c.question_id, arr);
   }
   const answerMap: Record<string, string> = {};
-  for (const a of answers ?? []) if (a.choice_id) answerMap[a.question_id] = a.choice_id;
+  const correctMap: Record<string, boolean | null> = {};
+  for (const a of answers ?? []) {
+    const v = a.choice_id ?? a.text_answer;
+    if (v) answerMap[a.question_id] = v;
+    correctMap[a.question_id] = a.is_correct;
+  }
 
   const runnerQuestions: RunnerQuestion[] = (questions ?? []).map((q) => ({
     id: q.id,
+    kind: q.kind,
     stem: q.stem,
     points: Number(q.points),
+    imageUrl: q.image_path ? imageUrls.get(q.image_path) ?? null : null,
     choices: choicesByQ.get(q.id) ?? [],
   }));
 
@@ -80,13 +89,22 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
           <h2 className="font-semibold">คำตอบของคุณ</h2>
           <ol className="mt-3 space-y-4">
             {runnerQuestions.map((q, i) => {
-              const chosen = q.choices.find((c) => c.id === answerMap[q.id]);
+              const raw = answerMap[q.id];
+              const shown = q.kind === "choice" ? q.choices.find((c) => c.id === raw)?.body : raw;
               const expl = questions?.find((x) => x.id === q.id)?.explanation;
+              const ok = correctMap[q.id];
               return (
-                <li key={q.id} className="rounded-xl border border-zinc-200 p-5 text-sm dark:border-zinc-800">
-                  <p className="font-medium"><span className="mr-2 text-zinc-500">{i + 1}.</span><span className="whitespace-pre-line">{q.stem}</span></p>
+                <li key={q.id} className={`rounded-xl border p-5 text-sm ${ok === true ? "border-emerald-300 dark:border-emerald-900" : ok === false ? "border-red-300 dark:border-red-900" : "border-zinc-200 dark:border-zinc-800"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium"><span className="mr-2 text-zinc-500">{i + 1}.</span><span className="whitespace-pre-line">{q.stem}</span></p>
+                    {ok != null && <span className={ok ? badge.green : badge.red}>{ok ? "ถูก" : "ผิด"}</span>}
+                  </div>
+                  {q.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={q.imageUrl} alt="" className="mt-3 max-h-64 w-auto max-w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-800" />
+                  )}
                   <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-                    ตอบ: {chosen ? chosen.body : <span className="italic">ไม่ได้ตอบ</span>}
+                    ตอบ: {shown ? shown : <span className="italic">ไม่ได้ตอบ</span>}
                   </p>
                   {expl && (
                     <p className="mt-2 whitespace-pre-line rounded-lg bg-zinc-50 p-3 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">

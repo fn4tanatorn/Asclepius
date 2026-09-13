@@ -55,16 +55,23 @@ export async function startAttempt(formData: FormData) {
   redirect(`/exam/${exam.slug}/attempt/${created.id}`);
 }
 
-/** Save (upsert) one answer. Rejected after submission or past the time limit. */
-export async function saveAnswer(input: { attemptId: string; questionId: string; choiceId: string }) {
+/** Save (upsert) one answer (a choice or a typed answer). Rejected after submission or past the time limit. */
+export async function saveAnswer(
+  input: { attemptId: string; questionId: string } & ({ choiceId: string } | { textAnswer: string }),
+) {
   const { supabase, attempt } = await loadOwnAttempt(input.attemptId);
   if (attempt.submitted_at) return { ok: false, reason: "submitted" as const };
 
   const deadline = deadlineOf(attempt.started_at, attempt.exams?.time_limit_minutes ?? null);
   if (deadline && Date.now() > deadline + GRACE_MS) return { ok: false, reason: "expired" as const };
 
+  const row =
+    "choiceId" in input
+      ? { choice_id: input.choiceId, text_answer: null }
+      : { choice_id: null, text_answer: input.textAnswer.slice(0, 500) };
+
   const { error } = await supabase.from("attempt_answers").upsert(
-    { attempt_id: attempt.id, question_id: input.questionId, choice_id: input.choiceId, answered_at: new Date().toISOString() },
+    { attempt_id: attempt.id, question_id: input.questionId, ...row, answered_at: new Date().toISOString() },
     { onConflict: "attempt_id,question_id" },
   );
   return { ok: !error, reason: error ? ("error" as const) : undefined };
