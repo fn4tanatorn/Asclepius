@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { btn } from "@/components/ui";
 import { Logo } from "@/components/icons";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -10,7 +11,8 @@ export default async function Home() {
   } = await supabase.auth.getUser();
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24 text-center">
+    <main className="relative flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24 text-center">
+      <ThemeToggle className="absolute top-4 right-4 border border-line bg-surface/80 shadow-soft backdrop-blur" />
       <div className="space-y-4">
         <Logo className="mx-auto text-brand" />
         <p className="text-sm font-semibold uppercase tracking-widest text-pink">

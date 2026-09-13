@@ -5,6 +5,13 @@
    Light: pastel wash on white. Dark: deep navy with the same accents, muted.
    Use the semantic names (surface, ink, line, brand…) in components, never
    raw hex, so both themes stay in sync.
+
+   Theme resolution (see components/theme-toggle.tsx + theme-script.tsx):
+   - No `data-theme` on <html>: follow the OS/browser preference
+     (prefers-color-scheme). This is the default until the visitor picks one.
+   - `data-theme="light"` / `data-theme="dark"` on <html>: an explicit choice
+     that overrides the OS preference either way. Set by the theme toggle and
+     applied before paint by an inline script to avoid a flash.
 --------------------------------------------------------------------------- */
 :root {
   --bg: #f7f9fe;
@@ -38,8 +45,9 @@
   --shadow-pop: 0 14px 40px -16px rgba(31, 42, 90, 0.28);
 }
 
+/* Dark values, used when the OS prefers dark AND the visitor hasn't forced light. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0f1424;
     --bg-wash:
       radial-gradient(
@@ -79,6 +87,46 @@
   }
 }
 
+/* Same dark values, forced on regardless of the OS preference. */
+:root[data-theme="dark"] {
+  --bg: #0f1424;
+  --bg-wash:
+    radial-gradient(
+      60rem 30rem at -10% -10%,
+      rgba(242, 107, 138, 0.14) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 28rem at 110% 0%,
+      rgba(76, 141, 255, 0.16) 0%,
+      transparent 60%
+    );
+  --surface: #171d33;
+  --surface-2: #1f2640;
+  --line: #2a3352;
+  --ink: #eef1fb;
+  --ink-2: #b4bcd6;
+  --muted: #7f89aa;
+
+  --brand: #6ea1ff;
+  --brand-ink: #0f1424;
+  --brand-soft: #1e2c4d;
+  --pink: #ff8aa5;
+  --pink-soft: #3a2230;
+  --mint: #4cd3a3;
+  --mint-soft: #16342b;
+  --lemon: #f5c45a;
+  --lemon-soft: #3a3120;
+  --lavender: #a99cff;
+  --lavender-soft: #2a2647;
+  --danger: #ff6b70;
+  --danger-soft: #3d2124;
+
+  --shadow-soft:
+    0 6px 24px -12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 14px 40px -16px rgba(0, 0, 0, 0.7);
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -112,6 +160,12 @@
 
 html {
   color-scheme: light dark;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {

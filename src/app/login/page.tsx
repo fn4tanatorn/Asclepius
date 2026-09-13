@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/site-url";
 import { alert, btn, card, input } from "@/components/ui";
 import { Logo } from "@/components/icons";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { sendMagicLink, signInWithGoogle } from "./actions";
 
 export const metadata: Metadata = { title: "เข้าสู่ระบบ" };
@@ -28,7 +29,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (user) redirect(next);
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
+    <main className="relative flex flex-1 items-center justify-center px-6 py-16">
+      <ThemeToggle className="absolute top-4 right-4 border border-line bg-surface/80 shadow-soft backdrop-blur" />
       <div className="w-full max-w-sm space-y-8">
         <div className="space-y-2 text-center">
           <Logo className="mx-auto text-brand" />

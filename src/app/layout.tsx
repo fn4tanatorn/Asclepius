@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
+import { ThemeScript } from "@/components/theme-script";
 import "./globals.css";
 
 const notoThai = Noto_Sans_Thai({
@@ -19,8 +20,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="th" className={`${notoThai.variable} h-full`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html
+      lang="th"
+      className={`${notoThai.variable} h-full`}
+      suppressHydrationWarning
+    >
+      <body className="flex min-h-full flex-col">
+        <ThemeScript />
+        {children}
+      </body>
     </html>
   );
 }

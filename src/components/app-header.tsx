@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { LineNameModal, SNOOZE_COOKIE } from "./line-name-modal";
 import { NavLinks } from "./nav-links";
+import { ThemeToggle } from "./theme-toggle";
 import { IconExam, IconPlay, IconSettings, Logo } from "./icons";
 
 type Role = Database["public"]["Enums"]["user_role"];
@@ -72,6 +73,8 @@ export async function AppHeader({
             <NavLinks items={items} />
           </div>
           <div className="flex items-center gap-2 text-sm">
+            <ThemeToggle />
+            <span className="hidden h-5 w-px bg-line sm:block" />
             <Link
               href="/profile"
               className="flex items-center gap-2 rounded-pill py-1 pl-1 pr-3 text-ink-2 transition hover:bg-surface-2 hover:text-ink"
