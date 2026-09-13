@@ -1,13 +1,20 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { btn } from "@/components/ui";
 
-export default function GlobalError({
+export default function Error({
+  error,
   reset,
 }: {
-  error: Error;
+  error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
       <h1 className="text-2xl font-semibold">เกิดข้อผิดพลาด</h1>
