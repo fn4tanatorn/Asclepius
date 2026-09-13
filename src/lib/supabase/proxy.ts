@@ -34,16 +34,18 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not add logic between createServerClient and getUser():
+  // Do not add logic between createServerClient and getClaims():
   // it can cause the session to be dropped.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the JWT locally against the project's JWKS (ES256),
+  // so this is not a network round trip on every request; it still refreshes
+  // an expired session via the refresh token when needed.
+  const { data } = await supabase.auth.getClaims();
+  const hasUser = Boolean(data?.claims?.sub);
 
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
 
-  if (!user && isProtected) {
+  if (!hasUser && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

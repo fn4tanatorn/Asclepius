@@ -1,23 +1,13 @@
-import { requireUser } from "@/lib/auth/require-user";
+import { getProfile, requireUser } from "@/lib/auth/require-user";
 import { AppHeader } from "./app-header";
 
 /**
- * Layout wrapper for signed-in pages. Fetches the profile once for the header.
- * Pages still call requireUser()/requireStaff() themselves for authorization.
+ * Layout wrapper for signed-in pages. Auth + profile lookups are cached per
+ * request, so the page's own requireUser()/requireStaff() adds no extra round trips.
  */
-export async function AppShell({
-  children,
-  nextPath,
-}: {
-  children: React.ReactNode;
-  nextPath: string;
-}) {
-  const { supabase, user } = await requireUser(nextPath);
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .single();
+export async function AppShell({ children, nextPath }: { children: React.ReactNode; nextPath: string }) {
+  const { user } = await requireUser(nextPath);
+  const profile = await getProfile(user.id);
 
   return (
     <>

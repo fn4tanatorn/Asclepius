@@ -1,5 +1,25 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+
+/**
+ * One Supabase client + one getUser() per request, shared by layout and page
+ * (React cache() dedupes within a single server render).
+ */
+const getSession = cache(async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { supabase, user };
+});
+
+/** Profile row for the signed-in user, fetched at most once per request. */
+export const getProfile = cache(async (userId: string) => {
+  const { supabase } = await getSession();
+  const { data } = await supabase.from("profiles").select("role, full_name").eq("id", userId).single();
+  return data;
+});
 
 /**
  * For Server Components / Server Functions on protected pages.
@@ -7,16 +27,11 @@ import { createClient } from "@/lib/supabase/server";
  * the proxy is an optimistic check, not the authorization boundary.
  */
 export async function requireUser(nextPath?: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { supabase, user } = await getSession();
   if (!user) {
     const q = nextPath ? `?next=${encodeURIComponent(nextPath)}` : "";
     redirect(`/login${q}`);
   }
-
   return { supabase, user };
 }
 
@@ -27,16 +42,10 @@ export async function requireUser(nextPath?: string) {
  */
 export async function requireStaff(nextPath?: string) {
   const { supabase, user } = await requireUser(nextPath);
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .single();
-
+  const profile = await getProfile(user.id);
   const role = profile?.role ?? "student";
   if (role !== "instructor" && role !== "admin") {
     redirect("/learn?error=forbidden");
   }
-
   return { supabase, user, role, fullName: profile?.full_name ?? "" };
 }
