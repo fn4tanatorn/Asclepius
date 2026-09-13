@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-user";
 import { formatDateTime, formatScore } from "@/lib/format";
 import { card, input } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: "Feedback" };
 
@@ -56,9 +57,7 @@ export default async function AdminFeedbackPage({
       </div>
 
       {!rows?.length ? (
-        <p className="rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-          ยังไม่มี feedback
-        </p>
+        <EmptyState mood="sleepy" title="ยังไม่มี feedback" />
       ) : (
         <ul className="space-y-3">
           {rows.map((r) => (

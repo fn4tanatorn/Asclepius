@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-user";
 import { formatDateTime, formatScore } from "@/lib/format";
 import { badge, input } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: "ผลสอบ" };
 
@@ -64,9 +65,7 @@ export default async function AdminResultsPage({
       )}
 
       {!attempts?.length ? (
-        <p className="rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-          ยังไม่มีผลสอบ
-        </p>
+        <EmptyState mood="sleepy" title="ยังไม่มีผลสอบ" />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-sm">

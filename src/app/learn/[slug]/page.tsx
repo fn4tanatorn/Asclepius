@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/require-user";
 import { formatDuration } from "@/lib/format";
 import { badge } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
 
 export async function generateMetadata({
   params,
@@ -67,9 +68,13 @@ export default async function CoursePage({
       )}
 
       {videos.length === 0 ? (
-        <p className="mt-10 rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-          ยังไม่มีวิดีโอในคอร์สนี้
-        </p>
+        <div className="mt-8">
+          <EmptyState
+            mood="sleepy"
+            title="ยังไม่มีวิดีโอในคอร์สนี้"
+            description="ผู้สอนกำลังเตรียมเนื้อหา กลับมาดูใหม่อีกครั้งนะ"
+          />
+        </div>
       ) : (
         <ol className="mt-6 divide-y divide-line rounded-xl border border-line">
           {videos.map((v, i) => {

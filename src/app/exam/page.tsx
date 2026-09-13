@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth/require-user";
+import { getProfile, requireUser } from "@/lib/auth/require-user";
 import { formatScore } from "@/lib/format";
-import { badge, card } from "@/components/ui";
+import { badge, btn, card, cardTint } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
+import { PageTitle } from "@/components/page-title";
+import { IconExam } from "@/components/icons";
 import { examAvailability } from "@/lib/exam-status";
 
 export const metadata: Metadata = { title: "ข้อสอบ" };
@@ -10,7 +13,7 @@ export const metadata: Metadata = { title: "ข้อสอบ" };
 export default async function ExamListPage() {
   const { supabase, user } = await requireUser("/exam");
 
-  const [{ data: exams }, { data: attempts }] = await Promise.all([
+  const [{ data: exams }, { data: attempts }, profile] = await Promise.all([
     supabase
       .from("exams")
       .select(
@@ -23,6 +26,7 @@ export default async function ExamListPage() {
       .select("id, exam_id, submitted_at, score, passed, started_at")
       .eq("user_id", user.id)
       .order("started_at", { ascending: false }),
+    getProfile(user.id),
   ]);
 
   const latestByExam = new Map<string, NonNullable<typeof attempts>[number]>();
@@ -35,78 +39,106 @@ export default async function ExamListPage() {
     if (a.submitted_at && !latestByExam.has(a.exam_id))
       latestByExam.set(a.exam_id, a);
   }
+  const isStaff = profile?.role === "instructor" || profile?.role === "admin";
 
   return (
     <main>
-      <h1 className="text-2xl font-semibold">ข้อสอบ</h1>
+      <PageTitle
+        icon={<IconExam width={26} height={26} />}
+        tint="pink"
+        title="ข้อสอบ"
+        subtitle="ฝึกทำข้อสอบ เพิ่มความมั่นใจก่อนสอบจริง"
+      />
       {!exams?.length ? (
-        <p className="mt-10 rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-          ยังไม่มีข้อสอบที่เผยแพร่
-        </p>
+        <div className="mt-8">
+          <EmptyState
+            title="ยังไม่มีข้อสอบที่เผยแพร่"
+            description={
+              isStaff
+                ? "สร้างข้อสอบชุดแรกเพื่อให้ผู้เรียนได้ฝึกทำกันเลย!"
+                : "รอผู้สอนเพิ่มข้อสอบเข้ามา แล้วกลับมาดูใหม่อีกครั้งนะ"
+            }
+            action={
+              isStaff && (
+                <Link href="/admin/exams" className={btn.primary}>
+                  + สร้างข้อสอบแรก
+                </Link>
+              )
+            }
+          />
+        </div>
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
-          {exams.map((e) => {
+          {exams.map((e, i) => {
             const latest = latestByExam.get(e.id);
             const open = openByExam.get(e.id);
             const avail = examAvailability(e);
             const used = usedByExam.get(e.id) ?? 0;
+            const tint = cardTint(i + 1);
             return (
               <li key={e.id}>
                 <Link
                   href={`/exam/${e.slug}`}
-                  className={`${card} block h-full hover:border-brand/40`}
+                  className={`${card} flex h-full gap-4 hover:border-brand/40`}
                 >
-                  {e.courses?.title && (
-                    <p className="text-xs text-ink-2">{e.courses.title}</p>
-                  )}
-                  <h2 className="font-semibold">{e.title}</h2>
-                  {e.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-2">
-                      {e.description}
-                    </p>
-                  )}
-                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-2">
-                    <span>{e.questions.length} ข้อ</span>
-                    {e.time_limit_minutes && (
-                      <span>{e.time_limit_minutes} นาที</span>
+                  <span
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint.bg} ${tint.text}`}
+                  >
+                    <IconExam width={22} height={22} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    {e.courses?.title && (
+                      <p className="text-xs text-ink-2">{e.courses.title}</p>
                     )}
-                    {e.passing_score != null && (
-                      <span>ผ่านที่ {formatScore(e.passing_score)}</span>
+                    <h2 className="font-semibold">{e.title}</h2>
+                    {e.description && (
+                      <p className="mt-1 line-clamp-2 text-sm text-ink-2">
+                        {e.description}
+                      </p>
                     )}
-                    {e.max_attempts != null && (
-                      <span>
-                        ทำได้ {e.max_attempts} ครั้ง
-                        {used ? ` (ใช้ ${used})` : ""}
-                      </span>
-                    )}
-                    <span
-                      className={
-                        avail.state === "open"
-                          ? ""
-                          : avail.state === "upcoming"
-                            ? "text-lemon"
-                            : "text-danger"
-                      }
-                    >
-                      {avail.label}
-                    </span>
-                    <span className="ml-auto">
-                      {open ? (
-                        <span className={badge.amber}>ทำค้างอยู่</span>
-                      ) : latest ? (
-                        <span
-                          className={
-                            latest.passed === false
-                              ? badge.red
-                              : latest.passed
-                                ? badge.green
-                                : badge.gray
-                          }
-                        >
-                          ล่าสุด {formatScore(latest.score)}
+                    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-2">
+                      <span>{e.questions.length} ข้อ</span>
+                      {e.time_limit_minutes && (
+                        <span>{e.time_limit_minutes} นาที</span>
+                      )}
+                      {e.passing_score != null && (
+                        <span>ผ่านที่ {formatScore(e.passing_score)}</span>
+                      )}
+                      {e.max_attempts != null && (
+                        <span>
+                          ทำได้ {e.max_attempts} ครั้ง
+                          {used ? ` (ใช้ ${used})` : ""}
                         </span>
-                      ) : null}
-                    </span>
+                      )}
+                      <span
+                        className={
+                          avail.state === "open"
+                            ? ""
+                            : avail.state === "upcoming"
+                              ? "text-lemon"
+                              : "text-danger"
+                        }
+                      >
+                        {avail.label}
+                      </span>
+                      <span className="ml-auto">
+                        {open ? (
+                          <span className={badge.amber}>ทำค้างอยู่</span>
+                        ) : latest ? (
+                          <span
+                            className={
+                              latest.passed === false
+                                ? badge.red
+                                : latest.passed
+                                  ? badge.green
+                                  : badge.gray
+                            }
+                          >
+                            ล่าสุด {formatScore(latest.score)}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
                   </div>
                 </Link>
               </li>

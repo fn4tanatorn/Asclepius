@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/require-user";
 import { formatScore } from "@/lib/format";
 import { alert, badge, btn, card, input, label } from "@/components/ui";
+import { Mascot } from "@/components/mascot";
 import { submitFeedback } from "@/app/exam/actions";
 
 export const metadata: Metadata = { title: "Feedback" };
@@ -39,22 +40,34 @@ export default async function FeedbackPage({
 
   return (
     <main className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <p className="text-sm text-ink-2">{attempt.exams.title}</p>
-        <h1 className="mt-1 text-2xl font-semibold">ส่งข้อสอบแล้ว 🎉</h1>
-        <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-2">
-          <span>
-            คะแนน{" "}
-            <span className="text-lg font-semibold text-ink">
-              {formatScore(attempt.score)}
+      <div className="flex items-center gap-4">
+        <Mascot
+          mood={
+            attempt.passed === false
+              ? "oops"
+              : attempt.passed === true
+                ? "cheer"
+                : "happy"
+          }
+          className="h-20 w-20 shrink-0"
+        />
+        <div>
+          <p className="text-sm text-ink-2">{attempt.exams.title}</p>
+          <h1 className="mt-1 text-2xl font-semibold">ส่งข้อสอบแล้ว!</h1>
+          <p className="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-2">
+            <span>
+              คะแนน{" "}
+              <span className="text-lg font-semibold text-ink">
+                {formatScore(attempt.score)}
+              </span>
             </span>
-          </span>
-          {attempt.passed != null && (
-            <span className={attempt.passed ? badge.green : badge.red}>
-              {attempt.passed ? "ผ่าน" : "ไม่ผ่าน"}
-            </span>
-          )}
-        </p>
+            {attempt.passed != null && (
+              <span className={attempt.passed ? badge.green : badge.red}>
+                {attempt.passed ? "ผ่าน" : "ไม่ผ่าน"}
+              </span>
+            )}
+          </p>
+        </div>
       </div>
 
       {sp.error && (

@@ -6,6 +6,7 @@ import { formatDateTime, formatScore } from "@/lib/format";
 import { alert, badge, btn, card } from "@/components/ui";
 import { signQuestionImages } from "@/lib/storage";
 import { AnswerDiff } from "@/components/answer-diff";
+import { Mascot } from "@/components/mascot";
 import { deadlineOf } from "@/lib/exam-status";
 import { ExamRunner, type RunnerQuestion } from "./exam-runner";
 
@@ -124,6 +125,16 @@ export default async function AttemptPage({
           </p>
         )}
         <section className={`${card} flex flex-wrap items-center gap-6`}>
+          <Mascot
+            mood={
+              attempt.passed === false
+                ? "oops"
+                : attempt.passed === true
+                  ? "cheer"
+                  : "happy"
+            }
+            className="h-20 w-20 shrink-0"
+          />
           <div>
             <p className="text-sm text-ink-2">คะแนน</p>
             <p className="text-4xl font-semibold">

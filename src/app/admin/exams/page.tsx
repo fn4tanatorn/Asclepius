@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-user";
 import { badge, btn, card, input, label } from "@/components/ui";
 import { Flash } from "@/components/flash";
+import { EmptyState } from "@/components/empty-state";
 import { createExam } from "../actions";
 import { examAvailability } from "@/lib/exam-status";
 
@@ -31,9 +32,10 @@ export default async function AdminExamsPage({
       <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
         <section>
           {!exams?.length ? (
-            <p className="rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-              ยังไม่มีข้อสอบ สร้างจากฟอร์มด้านข้าง
-            </p>
+            <EmptyState
+              title="ยังไม่มีข้อสอบ"
+              description="สร้างข้อสอบแรกจากฟอร์มด้านข้าง"
+            />
           ) : (
             <ul className="divide-y divide-line rounded-xl border border-line">
               {exams.map((e) => (

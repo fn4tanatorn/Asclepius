@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-user";
 import { badge, btn, card, input, label } from "@/components/ui";
 import { Flash } from "@/components/flash";
+import { EmptyState } from "@/components/empty-state";
 import { createCourse } from "../actions";
 
 export const metadata: Metadata = { title: "จัดการคอร์ส" };
@@ -27,9 +28,10 @@ export default async function AdminCoursesPage({
       <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
         <section>
           {!courses?.length ? (
-            <p className="rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
-              ยังไม่มีคอร์ส สร้างคอร์สแรกจากฟอร์มด้านข้าง
-            </p>
+            <EmptyState
+              title="ยังไม่มีคอร์ส"
+              description="สร้างคอร์สแรกจากฟอร์มด้านข้าง"
+            />
           ) : (
             <ul className="divide-y divide-line rounded-xl border border-line">
               {courses.map((c) => (

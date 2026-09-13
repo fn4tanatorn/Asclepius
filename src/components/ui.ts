@@ -40,3 +40,20 @@ export const alert = {
   ok: "rounded-xl border border-mint/30 bg-mint-soft px-4 py-3 text-sm text-mint",
   warn: "rounded-xl border border-lemon/40 bg-lemon-soft px-4 py-3 text-sm text-lemon",
 };
+
+/**
+ * Tinted icon-tile colors, cycled by index across a list of cards so a
+ * grid of courses/exams reads as organized without implying real
+ * categories the data doesn't have.
+ */
+export const cardTints = [
+  { bg: "bg-brand-soft", text: "text-brand" },
+  { bg: "bg-pink-soft", text: "text-pink" },
+  { bg: "bg-mint-soft", text: "text-mint" },
+  { bg: "bg-lemon-soft", text: "text-lemon" },
+  { bg: "bg-lavender-soft", text: "text-lavender" },
+] as const;
+
+export function cardTint(index: number) {
+  return cardTints[index % cardTints.length];
+}
