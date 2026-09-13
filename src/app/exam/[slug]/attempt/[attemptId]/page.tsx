@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/require-user";
 import { formatDateTime, formatScore } from "@/lib/format";
 import { badge, btn, card } from "@/components/ui";
 import { signQuestionImages } from "@/lib/storage";
+import { AnswerDiff } from "@/components/answer-diff";
 import { ExamRunner, type RunnerQuestion } from "./exam-runner";
 
 export const metadata: Metadata = { title: "ทำข้อสอบ" };
@@ -65,6 +66,10 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
 
   // ---- Result view ----
   if (attempt.submitted_at) {
+    // Answer keys are only reachable through this RPC (own submitted attempt + exam allows reveal).
+    const { data: review } = await supabase.rpc("get_attempt_review", { p_attempt_id: attempt.id });
+    const reviewByQ = new Map((review ?? []).map((r) => [r.question_id, r]));
+    const reveal = (review?.length ?? 0) > 0;
     return (
       <main className="space-y-6">
         <div>
@@ -87,25 +92,43 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
 
         <section>
           <h2 className="font-semibold">คำตอบของคุณ</h2>
+          {!reveal && <p className="mt-1 text-sm text-zinc-500">ข้อสอบนี้ไม่แสดงเฉลย</p>}
           <ol className="mt-3 space-y-4">
             {runnerQuestions.map((q, i) => {
               const raw = answerMap[q.id];
               const shown = q.kind === "choice" ? q.choices.find((c) => c.id === raw)?.body : raw;
               const expl = questions?.find((x) => x.id === q.id)?.explanation;
               const ok = correctMap[q.id];
+              const rv = reviewByQ.get(q.id);
+              const fuzzyHit = ok === true && q.kind === "text" && (rv?.distance ?? 0) > 0;
+              const correctChoice = rv?.correct_choice_id ? q.choices.find((c) => c.id === rv.correct_choice_id) : null;
               return (
                 <li key={q.id} className={`rounded-xl border p-5 text-sm ${ok === true ? "border-emerald-300 dark:border-emerald-900" : ok === false ? "border-red-300 dark:border-red-900" : "border-zinc-200 dark:border-zinc-800"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium"><span className="mr-2 text-zinc-500">{i + 1}.</span><span className="whitespace-pre-line">{q.stem}</span></p>
-                    {ok != null && <span className={ok ? badge.green : badge.red}>{ok ? "ถูก" : "ผิด"}</span>}
+                    {ok != null && <span className={ok ? badge.green : badge.red}>{ok ? (fuzzyHit ? "ถูก (สะกดคลาดเล็กน้อย)" : "ถูก") : "ผิด"}</span>}
                   </div>
                   {q.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={q.imageUrl} alt="" className="mt-3 max-h-64 w-auto max-w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-800" />
                   )}
-                  <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-                    ตอบ: {shown ? shown : <span className="italic">ไม่ได้ตอบ</span>}
-                  </p>
+                  {q.kind === "text" && rv?.closest_answer && raw ? (
+                    <div className="mt-3"><AnswerDiff answer={raw} expected={rv.closest_answer} /></div>
+                  ) : (
+                    <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+                      ตอบ: {shown ? shown : <span className="italic">ไม่ได้ตอบ</span>}
+                    </p>
+                  )}
+                  {rv && q.kind === "text" && rv.accepted_answers && (
+                    <p className="mt-2 text-emerald-700 dark:text-emerald-400">
+                      <span className="font-medium">เฉลย: </span>{rv.accepted_answers.join(" / ")}
+                    </p>
+                  )}
+                  {rv && q.kind === "choice" && correctChoice && (
+                    <p className="mt-2 text-emerald-700 dark:text-emerald-400">
+                      <span className="font-medium">เฉลย: </span>{correctChoice.body}
+                    </p>
+                  )}
                   {expl && (
                     <p className="mt-2 whitespace-pre-line rounded-lg bg-zinc-50 p-3 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                       <span className="font-medium">คำอธิบาย: </span>{expl}

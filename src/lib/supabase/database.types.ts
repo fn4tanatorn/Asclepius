@@ -223,9 +223,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          fuzzy_matching: boolean
           id: string
           is_published: boolean
           passing_score: number | null
+          reveal_answers: boolean
           slug: string
           time_limit_minutes: number | null
           title: string
@@ -236,9 +238,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fuzzy_matching?: boolean
           id?: string
           is_published?: boolean
           passing_score?: number | null
+          reveal_answers?: boolean
           slug: string
           time_limit_minutes?: number | null
           title: string
@@ -249,9 +253,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          fuzzy_matching?: boolean
           id?: string
           is_published?: boolean
           passing_score?: number | null
+          reveal_answers?: boolean
           slug?: string
           time_limit_minutes?: number | null
           title?: string
@@ -455,9 +461,24 @@ export type Database = {
       }
     }
     Functions: {
+      answer_distance: {
+        Args: { p_answer: string; p_key: string }
+        Returns: number
+      }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      fuzzy_tolerance: { Args: { p_norm_key: string }; Returns: number }
+      get_attempt_review: {
+        Args: { p_attempt_id: string }
+        Returns: {
+          accepted_answers: string[]
+          closest_answer: string
+          correct_choice_id: string
+          distance: number
+          question_id: string
+        }[]
       }
       is_staff: { Args: never; Returns: boolean }
       normalize_answer: { Args: { p: string }; Returns: string }
@@ -478,6 +499,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      text_answer_matches: {
+        Args: { p_answer: string; p_question_id: string }
+        Returns: boolean
       }
     }
     Enums: {

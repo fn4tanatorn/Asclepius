@@ -23,7 +23,7 @@ export default async function AdminExamPage({ params, searchParams }: PageProps<
   const [{ data: exam }, { data: courses }] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, slug, title, description, course_id, time_limit_minutes, passing_score, is_published, questions(id, kind, stem, image_path, explanation, points, position, choices(id, body, is_correct, position), answer_keys(id, answer, position))")
+      .select("id, slug, title, description, course_id, time_limit_minutes, passing_score, is_published, reveal_answers, fuzzy_matching, questions(id, kind, stem, image_path, explanation, points, position, choices(id, body, is_correct, position), answer_keys(id, answer, position))")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("courses").select("id, title").order("title"),
@@ -181,6 +181,14 @@ export default async function AdminExamPage({ params, searchParams }: PageProps<
               </label>
               <label className={label}><span>เวลา (นาที, ว่าง = ไม่จำกัด)</span><input name="time_limit_minutes" type="number" min={1} defaultValue={exam.time_limit_minutes ?? ""} className={input} /></label>
               <label className={label}><span>เกณฑ์ผ่าน (%, ว่าง = ไม่กำหนด)</span><input name="passing_score" type="number" min={0} max={100} step="0.01" defaultValue={exam.passing_score ?? ""} className={input} /></label>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="reveal_answers" defaultChecked={exam.reveal_answers} className="mt-1" />
+                <span>แสดงเฉลยหลังส่งข้อสอบ<span className="block text-xs font-normal text-zinc-500">เปิดสำหรับข้อสอบฝึก ปิดสำหรับข้อสอบวัดผล</span></span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="fuzzy_matching" defaultChecked={exam.fuzzy_matching} className="mt-1" />
+                <span>ยอมรับคำตอบพิมพ์ที่สะกดคลาดเล็กน้อย<span className="block text-xs font-normal text-zinc-500">เฉลยสั้นกว่า 6 ตัวอักษรต้องตรงเป๊ะ, 6-11 ตัวผิดได้ 1, 12 ตัวขึ้นไปผิดได้ 2</span></span>
+              </label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" defaultChecked={exam.is_published} /> เผยแพร่ให้ผู้เรียนทำ</label>
               <button type="submit" className={`${btn.primary} w-full`}>บันทึก</button>
             </form>

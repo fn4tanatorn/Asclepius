@@ -259,6 +259,8 @@ export async function updateExam(formData: FormData) {
       course_id: optStr(formData, "course_id"),
       time_limit_minutes: num(formData, "time_limit_minutes"),
       passing_score: num(formData, "passing_score"),
+      reveal_answers: bool(formData, "reveal_answers"),
+      fuzzy_matching: bool(formData, "fuzzy_matching"),
       is_published: publish,
     })
     .eq("id", id);
