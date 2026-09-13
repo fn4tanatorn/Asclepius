@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Asclepius",
-    template: "%s | Asclepius",
+    default: "KawaiiMedicine",
+    template: "%s | KawaiiMedicine",
   },
   description: "Medical education platform: video lessons and exams.",
 };

@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Asclepius — MedEd platform (video lessons + exams)
+# KawaiiMedicine — MedEd platform (video lessons + exams)
 
 Medical-education web app. Two core features: **VDO** (course video lessons with progress tracking) and **EXAM** (multiple-choice exams with server-side grading).
 
@@ -17,7 +17,7 @@ Medical-education web app. Two core features: **VDO** (course video lessons with
 - Next.js 16 (App Router, `src/` dir, Turbopack), React 19, TypeScript, Tailwind CSS v4
 - Supabase: Postgres + Auth + Storage, accessed with `@supabase/ssr` + `@supabase/supabase-js`
 - Package manager: **npm** (lockfile committed)
-- Deploy: Vercel, production `https://asclepius-green.vercel.app` (auto-deploys from `main`). Env vars are set in the Vercel dashboard, not in the repo.
+- Deploy: Vercel, production `https://kawaiimedicine.vercel.app` (auto-deploys from `main`). Env vars are set in the Vercel dashboard, not in the repo.
 
 ## Commands
 
@@ -66,7 +66,7 @@ supabase migration new <name>
 - `src/app/auth/callback/route.ts` — handles PKCE `code` (Google, magic link) and `token_hash`+`type`. Always pass `?next=` and sanitize it with `safeNextPath()`.
 - `src/app/auth/signout/route.ts` — POST only.
 - `requireUser()` from `src/lib/auth/require-user.ts` in every protected Server Component / Server Function.
-- Redirect URLs must be allow-listed in Supabase → Authentication → URL Configuration: `https://asclepius-green.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`, and a wildcard for Vercel previews. Site URL is the Vercel production origin.
+- Redirect URLs must be allow-listed in Supabase → Authentication → URL Configuration: `https://kawaiimedicine.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`, and a wildcard for Vercel previews. Site URL is the Vercel production origin.
 - Google provider is configured in Supabase Dashboard → Authentication → Providers (Client ID/Secret from Google Cloud Console). Not stored in this repo.
 
 ## Conventions

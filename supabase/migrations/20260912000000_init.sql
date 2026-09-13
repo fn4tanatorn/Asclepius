@@ -1,4 +1,4 @@
--- Asclepius: initial schema for MedEd (video lessons + exams)
+-- KawaiiMedicine: initial schema for MedEd (video lessons + exams)
 -- Apply with: supabase db push
 
 -- ---------------------------------------------------------------------------

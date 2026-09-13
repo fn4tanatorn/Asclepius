@@ -30,7 +30,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <div className="w-full max-w-sm space-y-8">
         <div className="space-y-1 text-center">
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-            Asclepius
+            KawaiiMedicine
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">เข้าสู่ระบบ</h1>
         </div>

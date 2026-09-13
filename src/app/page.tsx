@@ -8,7 +8,7 @@ export default function Home() {
           MedEd
         </p>
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Asclepius
+          KawaiiMedicine
         </h1>
         <p className="max-w-md text-zinc-600 dark:text-zinc-400">
           แพลตฟอร์มการเรียนแพทยศาสตร์ — วิดีโอบทเรียนและข้อสอบ

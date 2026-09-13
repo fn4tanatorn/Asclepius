@@ -1,4 +1,4 @@
-# Asclepius
+# KawaiiMedicine
 
 Medical-education web platform: **video lessons** and **exams**.
 
@@ -14,7 +14,7 @@ npm run dev                  # http://localhost:3000
 
 ## Database
 
-Migrations live in `supabase/migrations/`. The CLI is linked to the `Asclepius` Supabase project.
+Migrations live in `supabase/migrations/`. The CLI is linked to the `KawaiiMedicine` Supabase project.
 
 ```bash
 supabase link --project-ref tbyqvtgafqcgvpqqmhfi   # once per machine
@@ -26,5 +26,5 @@ See [AGENTS.md](./AGENTS.md) for architecture, conventions, and security rules.
 
 ## Deploy
 
-Production: https://asclepius-green.vercel.app (Vercel, auto-deploys from `main`).
+Production: https://kawaiimedicine.vercel.app (Vercel, auto-deploys from `main`).
 Required Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
