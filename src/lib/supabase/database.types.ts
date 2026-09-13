@@ -219,6 +219,7 @@ export type Database = {
       }
       exams: {
         Row: {
+          closes_at: string | null
           course_id: string | null
           created_at: string
           created_by: string | null
@@ -226,6 +227,8 @@ export type Database = {
           fuzzy_matching: boolean
           id: string
           is_published: boolean
+          max_attempts: number | null
+          opens_at: string | null
           passing_score: number | null
           reveal_answers: boolean
           slug: string
@@ -234,6 +237,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          closes_at?: string | null
           course_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           fuzzy_matching?: boolean
           id?: string
           is_published?: boolean
+          max_attempts?: number | null
+          opens_at?: string | null
           passing_score?: number | null
           reveal_answers?: boolean
           slug: string
@@ -249,6 +255,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          closes_at?: string | null
           course_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -256,6 +263,8 @@ export type Database = {
           fuzzy_matching?: boolean
           id?: string
           is_published?: boolean
+          max_attempts?: number | null
+          opens_at?: string | null
           passing_score?: number | null
           reveal_answers?: boolean
           slug?: string
@@ -469,6 +478,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      exam_is_open: { Args: { p_exam_id: string }; Returns: boolean }
       fuzzy_tolerance: { Args: { p_norm_key: string }; Returns: number }
       get_attempt_review: {
         Args: { p_attempt_id: string }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth/require-user";
 import { signQuestionImages } from "@/lib/storage";
+import { examAvailability, toBangkokLocalInput } from "@/lib/exam-status";
 import { badge, btn, card, input, label } from "@/components/ui";
 import { Flash } from "@/components/flash";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -23,7 +24,7 @@ export default async function AdminExamPage({ params, searchParams }: PageProps<
   const [{ data: exam }, { data: courses }] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, slug, title, description, course_id, time_limit_minutes, passing_score, is_published, reveal_answers, fuzzy_matching, questions(id, kind, stem, image_path, explanation, points, position, choices(id, body, is_correct, position), answer_keys(id, answer, position))")
+      .select("id, slug, title, description, course_id, time_limit_minutes, passing_score, is_published, reveal_answers, fuzzy_matching, max_attempts, opens_at, closes_at, questions(id, kind, stem, image_path, explanation, points, position, choices(id, body, is_correct, position), answer_keys(id, answer, position))")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("courses").select("id, title").order("title"),
@@ -181,6 +182,10 @@ export default async function AdminExamPage({ params, searchParams }: PageProps<
               </label>
               <label className={label}><span>เวลา (นาที, ว่าง = ไม่จำกัด)</span><input name="time_limit_minutes" type="number" min={1} defaultValue={exam.time_limit_minutes ?? ""} className={input} /></label>
               <label className={label}><span>เกณฑ์ผ่าน (%, ว่าง = ไม่กำหนด)</span><input name="passing_score" type="number" min={0} max={100} step="0.01" defaultValue={exam.passing_score ?? ""} className={input} /></label>
+              <label className={label}><span>จำนวนครั้งที่ทำได้ (ว่าง = ไม่จำกัด)</span><input name="max_attempts" type="number" min={1} step={1} defaultValue={exam.max_attempts ?? ""} placeholder="เช่น 1 สำหรับข้อสอบวัดผล" className={input} /></label>
+              <label className={label}><span>เปิดให้ทำตั้งแต่ (เวลาไทย, ว่าง = ทันที)</span><input name="opens_at" type="datetime-local" defaultValue={toBangkokLocalInput(exam.opens_at)} className={input} /></label>
+              <label className={label}><span>ปิดเมื่อ (เวลาไทย, ว่าง = ไม่ปิด)</span><input name="closes_at" type="datetime-local" defaultValue={toBangkokLocalInput(exam.closes_at)} className={input} /></label>
+              <p className="text-xs text-zinc-500">สถานะตอนนี้: {examAvailability(exam).label}</p>
               <label className="flex items-start gap-2 text-sm">
                 <input type="checkbox" name="reveal_answers" defaultChecked={exam.reveal_answers} className="mt-1" />
                 <span>แสดงเฉลยหลังส่งข้อสอบ<span className="block text-xs font-normal text-zinc-500">เปิดสำหรับข้อสอบฝึก ปิดสำหรับข้อสอบวัดผล</span></span>

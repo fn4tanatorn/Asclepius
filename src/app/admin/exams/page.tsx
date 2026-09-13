@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/auth/require-user";
 import { badge, btn, card, input, label } from "@/components/ui";
 import { Flash } from "@/components/flash";
 import { createExam } from "../actions";
+import { examAvailability } from "@/lib/exam-status";
 
 export const metadata: Metadata = { title: "จัดการข้อสอบ" };
 
@@ -13,7 +14,7 @@ export default async function AdminExamsPage({ searchParams }: PageProps<"/admin
   const [{ data: exams }, { data: courses }] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, slug, title, is_published, time_limit_minutes, passing_score, questions(id), courses(title), exam_attempts(id)")
+      .select("id, slug, title, is_published, time_limit_minutes, passing_score, opens_at, closes_at, max_attempts, questions(id), courses(title), exam_attempts(id)")
       .order("created_at", { ascending: false }),
     supabase.from("courses").select("id, title").order("title"),
   ]);
@@ -36,6 +37,8 @@ export default async function AdminExamsPage({ searchParams }: PageProps<"/admin
                       <span className="block font-medium">{e.title}</span>
                       <span className="block text-xs text-zinc-500">
                         {e.courses?.title ? `${e.courses.title} · ` : ""}{e.questions.length} ข้อ · ส่งแล้ว {e.exam_attempts.length} ครั้ง
+                        {e.max_attempts != null ? ` · จำกัด ${e.max_attempts} ครั้ง/คน` : ""}
+                        {e.is_published ? ` · ${examAvailability(e).label}` : ""}
                       </span>
                     </span>
                     <span className={e.is_published ? badge.green : badge.gray}>{e.is_published ? "เผยแพร่" : "ฉบับร่าง"}</span>
@@ -62,6 +65,7 @@ export default async function AdminExamsPage({ searchParams }: PageProps<"/admin
               <label className={label}><span>เวลา (นาที)</span><input name="time_limit_minutes" type="number" min={1} className={input} /></label>
               <label className={label}><span>เกณฑ์ผ่าน (%)</span><input name="passing_score" type="number" min={0} max={100} step="0.01" className={input} /></label>
             </div>
+            <label className={label}><span>จำนวนครั้งที่ทำได้ (ว่าง = ไม่จำกัด)</span><input name="max_attempts" type="number" min={1} step={1} className={input} /></label>
             <button type="submit" className={`${btn.primary} w-full`}>สร้างข้อสอบ</button>
           </form>
         </aside>

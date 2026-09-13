@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/auth/require-user";
 import { slugify } from "@/lib/format";
+import { fromBangkokLocalInput } from "@/lib/exam-status";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Role = Database["public"]["Enums"]["user_role"];
@@ -225,6 +226,7 @@ export async function createExam(formData: FormData) {
       course_id: optStr(formData, "course_id"),
       time_limit_minutes: num(formData, "time_limit_minutes"),
       passing_score: num(formData, "passing_score"),
+      max_attempts: num(formData, "max_attempts"),
       created_by: user.id,
     })
     .select("id")
@@ -244,6 +246,10 @@ export async function updateExam(formData: FormData) {
   const slug = slugify(str(formData, "slug") || title);
   if (!title || !slug) redirect(withMsg(path, "error", "กรุณากรอกชื่อข้อสอบ"));
 
+  const opensAt = fromBangkokLocalInput(str(formData, "opens_at"));
+  const closesAt = fromBangkokLocalInput(str(formData, "closes_at"));
+  if (opensAt && closesAt && closesAt <= opensAt) redirect(withMsg(path, "error", "เวลาปิดต้องอยู่หลังเวลาเปิด"));
+
   const publish = bool(formData, "is_published");
   if (publish) {
     const problem = await validateExamForPublish(supabase, id);
@@ -261,6 +267,9 @@ export async function updateExam(formData: FormData) {
       passing_score: num(formData, "passing_score"),
       reveal_answers: bool(formData, "reveal_answers"),
       fuzzy_matching: bool(formData, "fuzzy_matching"),
+      max_attempts: num(formData, "max_attempts"),
+      opens_at: opensAt,
+      closes_at: closesAt,
       is_published: publish,
     })
     .eq("id", id);

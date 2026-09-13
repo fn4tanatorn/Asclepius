@@ -6,6 +6,7 @@ import { formatDateTime, formatScore } from "@/lib/format";
 import { badge, btn, card } from "@/components/ui";
 import { signQuestionImages } from "@/lib/storage";
 import { AnswerDiff } from "@/components/answer-diff";
+import { deadlineOf } from "@/lib/exam-status";
 import { ExamRunner, type RunnerQuestion } from "./exam-runner";
 
 export const metadata: Metadata = { title: "ทำข้อสอบ" };
@@ -17,7 +18,7 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
 
   const { data: attempt } = await supabase
     .from("exam_attempts")
-    .select("id, exam_id, user_id, started_at, submitted_at, score, passed, exams(id, slug, title, time_limit_minutes, passing_score)")
+    .select("id, exam_id, user_id, started_at, submitted_at, score, passed, exams(id, slug, title, time_limit_minutes, passing_score, closes_at)")
     .eq("id", attemptId)
     .maybeSingle();
   if (!attempt || !attempt.exams || attempt.exams.slug !== slug) notFound();
@@ -158,9 +159,7 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
     );
   }
 
-  const deadlineMs = exam.time_limit_minutes
-    ? new Date(attempt.started_at).getTime() + exam.time_limit_minutes * 60_000
-    : null;
+  const deadlineMs = deadlineOf(attempt.started_at, exam.time_limit_minutes, exam.closes_at);
 
   return (
     <main className="space-y-6">
