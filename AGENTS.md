@@ -69,6 +69,12 @@ supabase migration new <name>
 - Redirect URLs must be allow-listed in Supabase → Authentication → URL Configuration: `https://kawaiimedicine.vercel.app/auth/callback`, `http://localhost:3000/auth/callback`, and a wildcard for Vercel previews. Site URL is the Vercel production origin.
 - Google provider is configured in Supabase Dashboard → Authentication → Providers (Client ID/Secret from Google Cloud Console). Not stored in this repo.
 
+### Error tracking
+
+- Sentry (`@sentry/nextjs`), wired the Next.js-16-native way: `src/instrumentation.ts` (server/edge `Sentry.init` + `onRequestError`) and `src/instrumentation-client.ts` (browser `Sentry.init`, replaces the old `sentry.client.config.ts` pattern). `next.config.ts` wraps with `withSentryConfig` from `@sentry/nextjs/config` (not the deprecated top-level export).
+- `src/app/error.tsx` and `src/app/global-error.tsx` both report the caught error via `Sentry.captureException`.
+- Env: `NEXT_PUBLIC_SENTRY_DSN` (safe in the browser, it's a write-only key). Optional `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` enable sourcemap upload for readable production stack traces — without them the build just skips that step.
+
 ## Conventions
 
 - Schema changes go in a new file under `supabase/migrations/` (`supabase migration new <name>`), then `supabase db push`, then `npm run db:types`. Do not edit the dashboard by hand.
