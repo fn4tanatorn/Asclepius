@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { getProfile, requireUser } from "@/lib/auth/require-user";
 import { formatScore } from "@/lib/format";
-import { badge, btn, card, cardTint } from "@/components/ui";
+import { badge, btn, card } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 import { PageTitle } from "@/components/page-title";
-import { IconExam } from "@/components/icons";
+import { TopicIcon } from "@/components/topic-icon";
 import { examAvailability } from "@/lib/exam-status";
 
 export const metadata: Metadata = { title: "ข้อสอบ" };
@@ -44,7 +45,15 @@ export default async function ExamListPage() {
   return (
     <main>
       <PageTitle
-        icon={<IconExam width={26} height={26} />}
+        icon={
+          <Image
+            src="/icons/clipboard.png"
+            alt=""
+            width={40}
+            height={40}
+            className="object-contain"
+          />
+        }
         tint="pink"
         title="ข้อสอบ"
         subtitle="ฝึกทำข้อสอบ เพิ่มความมั่นใจก่อนสอบจริง"
@@ -74,18 +83,13 @@ export default async function ExamListPage() {
             const open = openByExam.get(e.id);
             const avail = examAvailability(e);
             const used = usedByExam.get(e.id) ?? 0;
-            const tint = cardTint(i + 1);
             return (
               <li key={e.id}>
                 <Link
                   href={`/exam/${e.slug}`}
                   className={`${card} flex h-full gap-4 hover:border-brand/40`}
                 >
-                  <span
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint.bg} ${tint.text}`}
-                  >
-                    <IconExam width={22} height={22} />
-                  </span>
+                  <TopicIcon index={i + 1} title={e.title} size={48} />
                   <div className="min-w-0 flex-1">
                     {e.courses?.title && (
                       <p className="text-xs text-ink-2">{e.courses.title}</p>

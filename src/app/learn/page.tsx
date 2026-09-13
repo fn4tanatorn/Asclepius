@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { getProfile, requireUser } from "@/lib/auth/require-user";
-import { alert, badge, btn, card, cardTint } from "@/components/ui";
+import { alert, badge, btn, card } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 import { PageTitle } from "@/components/page-title";
-import { IconPlay } from "@/components/icons";
+import { TopicIcon } from "@/components/topic-icon";
 
 export const metadata: Metadata = { title: "บทเรียนวิดีโอ" };
 
@@ -35,7 +36,15 @@ export default async function LearnPage({ searchParams }: PageProps<"/learn">) {
   return (
     <main>
       <PageTitle
-        icon={<IconPlay width={26} height={26} />}
+        icon={
+          <Image
+            src="/icons/books.png"
+            alt=""
+            width={40}
+            height={40}
+            className="object-contain"
+          />
+        }
         tint="brand"
         title="บทเรียนวิดีโอ"
         subtitle="เรียนรู้ได้ทุกที่ ทุกเวลา เสริมสร้างความรู้ทางการแพทย์"
@@ -72,18 +81,13 @@ export default async function LearnPage({ searchParams }: PageProps<"/learn">) {
             const pct = vids.length
               ? Math.round((finished / vids.length) * 100)
               : 0;
-            const tint = cardTint(i);
             return (
               <li key={c.id}>
                 <Link
                   href={`/learn/${c.slug}`}
                   className={`${card} flex h-full gap-4 hover:border-brand/40`}
                 >
-                  <span
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint.bg} ${tint.text}`}
-                  >
-                    <IconPlay width={22} height={22} />
-                  </span>
+                  <TopicIcon index={i} title={c.title} size={48} />
                   <div className="min-w-0 flex-1">
                     <h2 className="font-semibold">{c.title}</h2>
                     {c.description && (
