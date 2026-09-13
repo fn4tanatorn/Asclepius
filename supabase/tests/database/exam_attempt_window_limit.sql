@@ -36,25 +36,25 @@ insert into public.exam_attempts (exam_id, user_id) values (:'exam_unlimited', :
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', :'student')::text, true);
 
+-- throws_ok's 3-arg overload is (sql, errcode, errmsg), not (sql, errcode,
+-- description) — pass only the sqlstate here so we don't have to pin the
+-- exact wording of Postgres's RLS violation message.
 select throws_ok(
   format('insert into public.exam_attempts (exam_id, user_id) values (%L::uuid, %L::uuid)',
     :'exam_unpublished', :'student'),
-  '42501',
-  'starting an attempt on an unpublished exam is rejected'
+  '42501'
 );
 
 select throws_ok(
   format('insert into public.exam_attempts (exam_id, user_id) values (%L::uuid, %L::uuid)',
     :'exam_not_open_yet', :'student'),
-  '42501',
-  'starting an attempt before opens_at is rejected'
+  '42501'
 );
 
 select throws_ok(
   format('insert into public.exam_attempts (exam_id, user_id) values (%L::uuid, %L::uuid)',
     :'exam_closed', :'student'),
-  '42501',
-  'starting an attempt after closes_at is rejected'
+  '42501'
 );
 
 select lives_ok(
@@ -66,8 +66,7 @@ select lives_ok(
 select throws_ok(
   format('insert into public.exam_attempts (exam_id, user_id) values (%L::uuid, %L::uuid)',
     :'exam_at_limit', :'student'),
-  '42501',
-  'starting an attempt once max_attempts is reached is rejected'
+  '42501'
 );
 
 select lives_ok(
