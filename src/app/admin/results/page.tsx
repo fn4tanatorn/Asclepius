@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth/require-user";
 import { formatDateTime, formatScore } from "@/lib/format";
-import { badge, input } from "@/components/ui";
+import { badge, btn, input } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: "ผลสอบ" };
@@ -39,22 +39,30 @@ export default async function AdminResultsPage({
     <main className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-2xl font-semibold">ผลสอบ</h1>
-        <form method="get" className="flex items-center gap-2 text-sm">
-          <select name="exam" defaultValue={examId} className={input}>
-            <option value="">ทุกข้อสอบ</option>
-            {exams?.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-lg border border-line px-3 py-2 hover:bg-surface-2"
+        <div className="flex items-center gap-2 text-sm">
+          <form method="get" className="flex items-center gap-2">
+            <select name="exam" defaultValue={examId} className={input}>
+              <option value="">ทุกข้อสอบ</option>
+              {exams?.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-line px-3 py-2 hover:bg-surface-2"
+            >
+              กรอง
+            </button>
+          </form>
+          <a
+            href={`/admin/results/export${examId ? `?exam=${examId}` : ""}`}
+            className={btn.secondary}
           >
-            กรอง
-          </button>
-        </form>
+            ส่งออก CSV
+          </a>
+        </div>
       </div>
 
       {attempts && attempts.length > 0 && (
