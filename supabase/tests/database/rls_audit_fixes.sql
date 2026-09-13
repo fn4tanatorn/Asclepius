@@ -74,10 +74,17 @@ select lives_ok(
   'deleting an answer on an open (not yet submitted) attempt is allowed'
 );
 
-select throws_ok(
-  format('delete from public.attempt_answers where attempt_id = %L::uuid and question_id = %L::uuid',
-    :'attempt_submitted', :'q_choice'),
-  '42501'
+-- RLS's USING clause filters DELETE targets silently (no exception, just
+-- 0 rows affected) — unlike WITH CHECK on insert/update, which does throw.
+-- So verify the row survives, rather than expecting an error.
+delete from public.attempt_answers
+where attempt_id = :'attempt_submitted' and question_id = :'q_choice';
+
+select is(
+  (select count(*) from public.attempt_answers
+   where attempt_id = :'attempt_submitted' and question_id = :'q_choice'),
+  1::bigint,
+  'deleting an answer on an already-submitted attempt has no effect'
 );
 
 -- 2) profiles: email is locked on self-update, other columns still work.
