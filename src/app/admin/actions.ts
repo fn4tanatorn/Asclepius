@@ -494,3 +494,62 @@ export async function updateUserRole(formData: FormData) {
   revalidatePath("/admin/users");
   redirect(withMsg("/admin/users", "ok", "เปลี่ยนบทบาทแล้ว"));
 }
+
+// ---------------------------------------------------------------------------
+// Bulk import of "identify" questions: one image per question, answers parsed
+// from the filename by the client. Images are already uploaded by the browser.
+// ---------------------------------------------------------------------------
+export async function bulkCreateTextQuestions(input: {
+  examId: string;
+  stem: string;
+  points: number;
+  explanation: string | null;
+  items: { imagePath: string; answers: string[] }[];
+}): Promise<{ ok: true; created: number } | { ok: false; error: string }> {
+  const { supabase } = await requireStaff();
+  const stem = input.stem.trim();
+  if (!stem) return { ok: false, error: "กรุณากรอกโจทย์" };
+  const points = Number.isFinite(input.points) && input.points > 0 ? input.points : 1;
+
+  const items = input.items
+    .map((it) => ({
+      imagePath: it.imagePath,
+      answers: [...new Set(it.answers.map((a) => a.normalize("NFC").trim()).filter(Boolean))],
+    }))
+    .filter((it) => it.imagePath.startsWith(`${input.examId}/`) && !it.imagePath.includes("..") && it.answers.length > 0);
+  if (items.length === 0) return { ok: false, error: "ไม่มีรายการที่นำเข้าได้" };
+  if (items.length > 200) return { ok: false, error: "นำเข้าได้ครั้งละไม่เกิน 200 ข้อ" };
+
+  const { data: last } = await supabase
+    .from("questions").select("position").eq("exam_id", input.examId).order("position", { ascending: false }).limit(1).maybeSingle();
+  const base = (last?.position ?? -1) + 1;
+
+  const { data: qs, error } = await supabase
+    .from("questions")
+    .insert(
+      items.map((it, i) => ({
+        exam_id: input.examId,
+        kind: "text" as const,
+        stem,
+        image_path: it.imagePath,
+        explanation: input.explanation?.trim() || null,
+        points,
+        position: base + i,
+      })),
+    )
+    .select("id, position");
+  if (error || !qs) return { ok: false, error: "สร้างคำถามไม่สำเร็จ" };
+
+  const byPos = new Map(qs.map((q) => [q.position, q.id]));
+  const keys = items.flatMap((it, i) =>
+    it.answers.map((answer, position) => ({ question_id: byPos.get(base + i)!, answer, position })),
+  );
+  const { error: kErr } = await supabase.from("answer_keys").insert(keys);
+  if (kErr) {
+    await supabase.from("questions").delete().in("id", qs.map((q) => q.id));
+    return { ok: false, error: "บันทึกเฉลยไม่สำเร็จ" };
+  }
+
+  revalidatePath(`/admin/exams/${input.examId}`);
+  return { ok: true, created: qs.length };
+}

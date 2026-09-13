@@ -9,6 +9,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { ImageField } from "@/components/image-field";
 import { createQuestion, deleteExam, deleteQuestion, moveQuestion, updateExam, updateQuestion } from "../../actions";
 import { NewQuestionFields } from "./question-form-fields";
+import { BulkImageImport } from "./bulk-image-import";
 
 export const metadata: Metadata = { title: "แก้ไขข้อสอบ" };
 
@@ -155,6 +156,11 @@ export default async function AdminExamPage({ params, searchParams }: PageProps<
               <label className={label}><span>คะแนน</span><input name="points" type="number" min={0.01} step="0.01" defaultValue={1} className={input} /></label>
               <button type="submit" className={btn.primary}>เพิ่มคำถาม</button>
             </form>
+          </section>
+
+          <section className={card}>
+            <h2 className="font-semibold">นำเข้าคำถามภาพจากชื่อไฟล์</h2>
+            <div className="mt-4"><BulkImageImport examId={exam.id} /></div>
           </section>
         </div>
 
