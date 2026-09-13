@@ -5,6 +5,7 @@ import {
   IconChart,
   IconChat,
   IconExam,
+  IconFlag,
   IconHome,
   IconPlay,
   IconUsers,
@@ -36,6 +37,11 @@ const ADMIN_NAV = [
     href: "/admin/feedback",
     label: "Feedback",
     icon: <IconChat width={16} height={16} />,
+  },
+  {
+    href: "/admin/video-reports",
+    label: "ปัญหาวิดีโอ",
+    icon: <IconFlag width={16} height={16} />,
   },
   {
     href: "/admin/users",

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { saveVideoProgress } from "@/app/learn/actions";
-import { btn } from "@/components/ui";
+import Link from "next/link";
+import { reportVideoIssue, saveVideoProgress } from "@/app/learn/actions";
+import { btn, input } from "@/components/ui";
 
 const SAVE_EVERY_MS = 10_000;
 const COMPLETE_AT = 0.9;
@@ -15,6 +16,13 @@ type Props = {
     | { kind: "external"; url: string };
   initialSeconds: number;
   initialCompleted: boolean;
+  /** Whether this is the last published video in its course. */
+  isLastVideo: boolean;
+  /** Whether the caller already gave feedback for this course. */
+  hasCourseFeedback: boolean;
+  courseHref: string;
+  courseId: string;
+  courseSlug: string;
 };
 
 export function VideoPlayer({
@@ -22,6 +30,9 @@ export function VideoPlayer({
   source,
   initialSeconds,
   initialCompleted,
+  isLastVideo,
+  hasCourseFeedback,
+  courseHref,
 }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
   const lastSave = useRef(0);
@@ -78,6 +89,8 @@ export function VideoPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, source.kind, completed]);
 
+  const showFeedbackNudge = completed && isLastVideo && !hasCourseFeedback;
+
   return (
     <div className="space-y-3">
       <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
@@ -111,7 +124,7 @@ export function VideoPlayer({
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-ink-2">
           {completed
             ? "✓ ดูจบแล้ว"
@@ -119,16 +132,105 @@ export function VideoPlayer({
               ? "กำลังบันทึก…"
               : "ระบบจะบันทึกความคืบหน้าอัตโนมัติ"}
         </span>
-        {!completed && (
-          <button
-            type="button"
-            onClick={() => persist(ref.current?.currentTime ?? 0, true)}
-            className={btn.secondary}
-          >
-            ทำเครื่องหมายว่าดูจบแล้ว
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <ReportIssueButton videoId={videoId} />
+          {!completed && (
+            <button
+              type="button"
+              onClick={() => persist(ref.current?.currentTime ?? 0, true)}
+              className={btn.secondary}
+            >
+              ทำเครื่องหมายว่าดูจบแล้ว
+            </button>
+          )}
+        </div>
       </div>
+
+      {showFeedbackNudge && (
+        <p className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-lemon/40 bg-lemon-soft px-4 py-3 text-sm text-lemon">
+          <span>ดูจบคอร์สนี้แล้ว! ขอ feedback สักครู่ได้ไหม</span>
+          <Link
+            href={`${courseHref}/feedback`}
+            className="font-medium underline underline-offset-4"
+          >
+            ให้ feedback คอร์สนี้
+          </Link>
+        </p>
+      )}
     </div>
+  );
+}
+
+/** Small always-available "report an issue with this video" affordance. */
+function ReportIssueButton({ videoId }: { videoId: string }) {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setState("sending");
+    const res = await reportVideoIssue({ videoId, message });
+    if (res.ok) {
+      setState("sent");
+      setMessage("");
+    } else {
+      setState("error");
+    }
+  }
+
+  if (state === "sent") {
+    return <span className="text-sm text-mint">ขอบคุณสำหรับการแจ้งปัญหา</span>;
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-sm text-ink-2 underline-offset-4 hover:text-danger hover:underline"
+      >
+        แจ้งปัญหาวิดีโอนี้
+      </button>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
+    >
+      <input
+        autoFocus
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="เช่น เสียงเบา ภาพไม่ชัด เนื้อหาข้ามช่วง"
+        maxLength={1000}
+        disabled={state === "sending"}
+        className={`${input} sm:w-64`}
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={state === "sending" || !message.trim()}
+          className={btn.secondary}
+        >
+          {state === "sending" ? "กำลังส่ง…" : "ส่ง"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-ink-2 hover:text-ink"
+        >
+          ยกเลิก
+        </button>
+      </div>
+      {state === "error" && (
+        <span className="text-danger">ส่งไม่สำเร็จ กรุณาลองใหม่</span>
+      )}
+    </form>
   );
 }

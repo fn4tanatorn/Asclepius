@@ -143,3 +143,10 @@ export const IconMonitor = (p: P) => (
     <path d="M8 20h8M12 16v4" />
   </svg>
 );
+
+export const IconFlag = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M5 3v18" />
+    <path d="M5 4h11l-2.5 4.5L16 13H5" />
+  </svg>
+);

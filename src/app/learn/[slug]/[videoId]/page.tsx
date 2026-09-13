@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/require-user";
 import { youtubeId } from "@/lib/format";
+import { alert } from "@/components/ui";
 import { VideoPlayer } from "./video-player";
 
-import { alert } from "@/components/ui";
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 3;
 
 export async function generateMetadata({
@@ -45,6 +45,7 @@ export default async function VideoPage({
   if (!video) notFound();
   const prev = idx > 0 ? videos[idx - 1] : null;
   const next = idx >= 0 && idx < videos.length - 1 ? videos[idx + 1] : null;
+  const isLastVideo = idx >= 0 && idx === videos.length - 1;
 
   let source: React.ComponentProps<typeof VideoPlayer>["source"] | null = null;
   if (video.storage_path) {
@@ -60,12 +61,21 @@ export default async function VideoPage({
       : { kind: "external", url: video.external_url };
   }
 
-  const { data: progress } = await supabase
-    .from("video_progress")
-    .select("seconds_watched, completed")
-    .eq("user_id", user.id)
-    .eq("video_id", video.id)
-    .maybeSingle();
+  const [{ data: progress }, { data: courseFeedback }] = await Promise.all([
+    supabase
+      .from("video_progress")
+      .select("seconds_watched, completed")
+      .eq("user_id", user.id)
+      .eq("video_id", video.id)
+      .maybeSingle(),
+    // Only matters on the last video; harmless (and cheap, unique-indexed) otherwise.
+    supabase
+      .from("course_feedback")
+      .select("id")
+      .eq("course_id", course.id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
   return (
     <main className="space-y-6">
@@ -85,6 +95,11 @@ export default async function VideoPage({
           source={source}
           initialSeconds={progress?.seconds_watched ?? 0}
           initialCompleted={progress?.completed ?? false}
+          isLastVideo={isLastVideo}
+          hasCourseFeedback={Boolean(courseFeedback)}
+          courseHref={`/learn/${course.slug}`}
+          courseId={course.id}
+          courseSlug={course.slug}
         />
       ) : (
         <p className={alert.error}>

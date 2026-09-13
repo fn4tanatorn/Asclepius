@@ -730,3 +730,17 @@ export async function bulkCreateTextQuestions(input: {
   revalidatePath(`/admin/exams/${input.examId}`);
   return { ok: true, created: qs.length };
 }
+
+// ---------------------------------------------------------------------------
+// Video issue reports
+// ---------------------------------------------------------------------------
+export async function toggleReportResolved(formData: FormData) {
+  const { supabase } = await requireStaff();
+  const id = str(formData, "id");
+  const resolved = str(formData, "resolved") === "true";
+  const { error } = await supabase
+    .from("video_issue_reports")
+    .update({ resolved: !resolved })
+    .eq("id", id);
+  if (!error) revalidatePath("/admin/video-reports");
+}

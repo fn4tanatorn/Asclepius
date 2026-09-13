@@ -9,28 +9,42 @@ export const metadata: Metadata = { title: "จัดการระบบ" };
 export default async function AdminHome() {
   const { supabase, role } = await requireStaff("/admin");
 
-  const [courses, videos, exams, attempts, students, feedback, recent] =
-    await Promise.all([
-      supabase.from("courses").select("id", { count: "exact", head: true }),
-      supabase.from("videos").select("id", { count: "exact", head: true }),
-      supabase.from("exams").select("id", { count: "exact", head: true }),
-      supabase
-        .from("exam_attempts")
-        .select("id", { count: "exact", head: true })
-        .not("submitted_at", "is", null),
-      supabase.from("profiles").select("id", { count: "exact", head: true }),
-      supabase
-        .from("exam_feedback")
-        .select("id", { count: "exact", head: true }),
-      supabase
-        .from("exam_attempts")
-        .select(
-          "id, score, passed, submitted_at, exams(slug, title), profiles(full_name, email, line_name)",
-        )
-        .not("submitted_at", "is", null)
-        .order("submitted_at", { ascending: false })
-        .limit(8),
-    ]);
+  const [
+    courses,
+    videos,
+    exams,
+    attempts,
+    students,
+    examFeedback,
+    courseFeedback,
+    openReports,
+    recent,
+  ] = await Promise.all([
+    supabase.from("courses").select("id", { count: "exact", head: true }),
+    supabase.from("videos").select("id", { count: "exact", head: true }),
+    supabase.from("exams").select("id", { count: "exact", head: true }),
+    supabase
+      .from("exam_attempts")
+      .select("id", { count: "exact", head: true })
+      .not("submitted_at", "is", null),
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("exam_feedback").select("id", { count: "exact", head: true }),
+    supabase
+      .from("course_feedback")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("video_issue_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("resolved", false),
+    supabase
+      .from("exam_attempts")
+      .select(
+        "id, score, passed, submitted_at, exams(slug, title), profiles(full_name, email, line_name)",
+      )
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false })
+      .limit(8),
+  ]);
 
   const stats = [
     { label: "คอร์ส", value: courses.count ?? 0, href: "/admin/courses" },
@@ -42,7 +56,16 @@ export default async function AdminHome() {
       href: "/admin/results",
     },
     { label: "ผู้ใช้", value: students.count ?? 0, href: "/admin/users" },
-    { label: "Feedback", value: feedback.count ?? 0, href: "/admin/feedback" },
+    {
+      label: "Feedback",
+      value: (examFeedback.count ?? 0) + (courseFeedback.count ?? 0),
+      href: "/admin/feedback",
+    },
+    {
+      label: "ปัญหาวิดีโอ",
+      value: openReports.count ?? 0,
+      href: "/admin/video-reports",
+    },
   ];
 
   return (
@@ -54,7 +77,7 @@ export default async function AdminHome() {
         </p>
       </div>
 
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((s) => (
           <li key={s.label}>
             <Link
