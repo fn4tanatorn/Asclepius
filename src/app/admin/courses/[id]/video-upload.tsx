@@ -13,7 +13,9 @@ export function VideoUpload({ courseId }: { courseId: string }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<"idle" | "uploading" | "saving" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "uploading" | "saving" | "error"
+  >("idle");
   const [msg, setMsg] = useState<string | null>(null);
 
   async function readDuration(file: File): Promise<number | null> {
@@ -41,9 +43,10 @@ export function VideoUpload({ courseId }: { courseId: string }) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
     const path = `${courseId}/${crypto.randomUUID()}.${ext}`;
 
-    const { error } = await supabase.storage
-      .from("videos")
-      .upload(path, file, { contentType: file.type || "video/mp4", upsert: false });
+    const { error } = await supabase.storage.from("videos").upload(path, file, {
+      contentType: file.type || "video/mp4",
+      upsert: false,
+    });
     if (error) {
       setStatus("error");
       setMsg(`อัปโหลดไม่สำเร็จ: ${error.message}`);
@@ -52,7 +55,12 @@ export function VideoUpload({ courseId }: { courseId: string }) {
 
     setStatus("saving");
     const duration = await readDuration(file);
-    const res = await registerUploadedVideo({ courseId, title: title.trim(), storagePath: path, durationSeconds: duration });
+    const res = await registerUploadedVideo({
+      courseId,
+      title: title.trim(),
+      storagePath: path,
+      durationSeconds: duration,
+    });
     if (!res.ok) {
       setStatus("error");
       setMsg("บันทึกข้อมูลวิดีโอไม่สำเร็จ (ไฟล์อัปโหลดแล้ว) กรุณาแจ้งผู้ดูแล");
@@ -70,17 +78,42 @@ export function VideoUpload({ courseId }: { courseId: string }) {
     <form onSubmit={onSubmit} className="space-y-3">
       <label className={label}>
         <span>ชื่อวิดีโอ</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required className={input} disabled={busy} />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className={input}
+          disabled={busy}
+        />
       </label>
       <label className={label}>
         <span>ไฟล์วิดีโอ (mp4 / webm / mov)</span>
-        <input ref={fileRef} type="file" accept={ACCEPT} required className={`${input} file:mr-3 file:rounded file:border-0 file:bg-zinc-100 file:px-2 file:py-1 file:text-xs dark:file:bg-zinc-800`} disabled={busy} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept={ACCEPT}
+          required
+          className={`${input} file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs`}
+          disabled={busy}
+        />
       </label>
-      {msg && <p className={`text-sm ${status === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}>{msg}</p>}
+      {msg && (
+        <p
+          className={`text-sm ${status === "error" ? "text-danger" : "text-mint"}`}
+        >
+          {msg}
+        </p>
+      )}
       <button type="submit" disabled={busy} className={`${btn.primary} w-full`}>
-        {status === "uploading" ? "กำลังอัปโหลด… (อย่าปิดหน้านี้)" : status === "saving" ? "กำลังบันทึก…" : "อัปโหลดและเพิ่มวิดีโอ"}
+        {status === "uploading"
+          ? "กำลังอัปโหลด… (อย่าปิดหน้านี้)"
+          : status === "saving"
+            ? "กำลังบันทึก…"
+            : "อัปโหลดและเพิ่มวิดีโอ"}
       </button>
-      <p className="text-xs text-zinc-500">วิดีโอที่อัปโหลดจะเป็นฉบับร่าง ต้องกดเผยแพร่ในรายการด้านซ้าย</p>
+      <p className="text-xs text-ink-2">
+        วิดีโอที่อัปโหลดจะเป็นฉบับร่าง ต้องกดเผยแพร่ในรายการด้านซ้าย
+      </p>
     </form>
   );
 }

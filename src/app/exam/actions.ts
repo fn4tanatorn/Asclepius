@@ -10,7 +10,9 @@ async function loadOwnAttempt(attemptId: string) {
   const { supabase, user } = await requireUser();
   const { data: attempt } = await supabase
     .from("exam_attempts")
-    .select("id, exam_id, user_id, started_at, submitted_at, exams(slug, time_limit_minutes, closes_at)")
+    .select(
+      "id, exam_id, user_id, started_at, submitted_at, exams(slug, time_limit_minutes, closes_at)",
+    )
     .eq("id", attemptId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -29,7 +31,8 @@ export async function startAttempt(formData: FormData) {
     .eq("slug", slug)
     .maybeSingle();
   if (!exam || !exam.is_published) redirect("/exam");
-  if (examAvailability(exam).state !== "open") redirect(`/exam/${exam.slug}?error=closed`);
+  if (examAvailability(exam).state !== "open")
+    redirect(`/exam/${exam.slug}?error=closed`);
 
   const { data: open } = await supabase
     .from("exam_attempts")
@@ -47,7 +50,8 @@ export async function startAttempt(formData: FormData) {
     .select("id", { count: "exact", head: true })
     .eq("exam_id", exam.id)
     .eq("user_id", user.id);
-  if (!attemptsLeft(exam.max_attempts, count ?? 0)) redirect(`/exam/${exam.slug}?error=limit`);
+  if (!attemptsLeft(exam.max_attempts, count ?? 0))
+    redirect(`/exam/${exam.slug}?error=limit`);
 
   const { data: created, error } = await supabase
     .from("exam_attempts")
@@ -61,13 +65,20 @@ export async function startAttempt(formData: FormData) {
 
 /** Save (upsert) one answer (a choice or a typed answer). Rejected after submission or past the time limit. */
 export async function saveAnswer(
-  input: { attemptId: string; questionId: string } & ({ choiceId: string } | { textAnswer: string }),
+  input: { attemptId: string; questionId: string } & (
+    { choiceId: string } | { textAnswer: string }
+  ),
 ) {
   const { supabase, attempt } = await loadOwnAttempt(input.attemptId);
   if (attempt.submitted_at) return { ok: false, reason: "submitted" as const };
 
-  const deadline = deadlineOf(attempt.started_at, attempt.exams?.time_limit_minutes ?? null, attempt.exams?.closes_at ?? null);
-  if (deadline && Date.now() > deadline + GRACE_MS) return { ok: false, reason: "expired" as const };
+  const deadline = deadlineOf(
+    attempt.started_at,
+    attempt.exams?.time_limit_minutes ?? null,
+    attempt.exams?.closes_at ?? null,
+  );
+  if (deadline && Date.now() > deadline + GRACE_MS)
+    return { ok: false, reason: "expired" as const };
 
   const row =
     "choiceId" in input
@@ -75,7 +86,12 @@ export async function saveAnswer(
       : { choice_id: null, text_answer: input.textAnswer.slice(0, 500) };
 
   const { error } = await supabase.from("attempt_answers").upsert(
-    { attempt_id: attempt.id, question_id: input.questionId, ...row, answered_at: new Date().toISOString() },
+    {
+      attempt_id: attempt.id,
+      question_id: input.questionId,
+      ...row,
+      answered_at: new Date().toISOString(),
+    },
     { onConflict: "attempt_id,question_id" },
   );
   return { ok: !error, reason: error ? ("error" as const) : undefined };
@@ -88,7 +104,9 @@ export async function submitAttempt(formData: FormData) {
   const slug = attempt.exams?.slug ?? "";
 
   if (!attempt.submitted_at) {
-    const { error } = await supabase.rpc("submit_exam_attempt", { p_attempt_id: attempt.id });
+    const { error } = await supabase.rpc("submit_exam_attempt", {
+      p_attempt_id: attempt.id,
+    });
     if (error) redirect(`/exam/${slug}/attempt/${attempt.id}?error=submit`);
     redirect(`/exam/${slug}/attempt/${attempt.id}/feedback`);
   }
@@ -119,6 +137,7 @@ export async function submitFeedback(formData: FormData) {
     exam_comment: examComment,
     general_comment: generalComment,
   });
-  if (error && error.code !== "23505") redirect(`${resultPath}/feedback?error=1`);
+  if (error && error.code !== "23505")
+    redirect(`${resultPath}/feedback?error=1`);
   redirect(`${resultPath}?feedback=thanks`);
 }

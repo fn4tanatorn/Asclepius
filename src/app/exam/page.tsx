@@ -13,7 +13,9 @@ export default async function ExamListPage() {
   const [{ data: exams }, { data: attempts }] = await Promise.all([
     supabase
       .from("exams")
-      .select("id, slug, title, description, time_limit_minutes, passing_score, is_published, opens_at, closes_at, max_attempts, questions(id), courses(title)")
+      .select(
+        "id, slug, title, description, time_limit_minutes, passing_score, is_published, opens_at, closes_at, max_attempts, questions(id), courses(title)",
+      )
       .eq("is_published", true)
       .order("created_at", { ascending: true }),
     supabase
@@ -28,15 +30,17 @@ export default async function ExamListPage() {
   const usedByExam = new Map<string, number>();
   for (const a of attempts ?? []) {
     usedByExam.set(a.exam_id, (usedByExam.get(a.exam_id) ?? 0) + 1);
-    if (!a.submitted_at && !openByExam.has(a.exam_id)) openByExam.set(a.exam_id, a.id);
-    if (a.submitted_at && !latestByExam.has(a.exam_id)) latestByExam.set(a.exam_id, a);
+    if (!a.submitted_at && !openByExam.has(a.exam_id))
+      openByExam.set(a.exam_id, a.id);
+    if (a.submitted_at && !latestByExam.has(a.exam_id))
+      latestByExam.set(a.exam_id, a);
   }
 
   return (
     <main>
       <h1 className="text-2xl font-semibold">ข้อสอบ</h1>
       {!exams?.length ? (
-        <p className="mt-10 rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 dark:border-zinc-700">
+        <p className="mt-10 rounded-lg border border-dashed border-line p-8 text-center text-ink-2">
           ยังไม่มีข้อสอบที่เผยแพร่
         </p>
       ) : (
@@ -48,23 +52,57 @@ export default async function ExamListPage() {
             const used = usedByExam.get(e.id) ?? 0;
             return (
               <li key={e.id}>
-                <Link href={`/exam/${e.slug}`} className={`${card} block h-full hover:border-zinc-400 dark:hover:border-zinc-600`}>
-                  {e.courses?.title && <p className="text-xs text-zinc-500">{e.courses.title}</p>}
+                <Link
+                  href={`/exam/${e.slug}`}
+                  className={`${card} block h-full hover:border-brand/40`}
+                >
+                  {e.courses?.title && (
+                    <p className="text-xs text-ink-2">{e.courses.title}</p>
+                  )}
                   <h2 className="font-semibold">{e.title}</h2>
                   {e.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{e.description}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-ink-2">
+                      {e.description}
+                    </p>
                   )}
-                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-2">
                     <span>{e.questions.length} ข้อ</span>
-                    {e.time_limit_minutes && <span>{e.time_limit_minutes} นาที</span>}
-                    {e.passing_score != null && <span>ผ่านที่ {formatScore(e.passing_score)}</span>}
-                    {e.max_attempts != null && <span>ทำได้ {e.max_attempts} ครั้ง{used ? ` (ใช้ ${used})` : ""}</span>}
-                    <span className={avail.state === "open" ? "" : avail.state === "upcoming" ? "text-amber-600" : "text-red-600"}>{avail.label}</span>
+                    {e.time_limit_minutes && (
+                      <span>{e.time_limit_minutes} นาที</span>
+                    )}
+                    {e.passing_score != null && (
+                      <span>ผ่านที่ {formatScore(e.passing_score)}</span>
+                    )}
+                    {e.max_attempts != null && (
+                      <span>
+                        ทำได้ {e.max_attempts} ครั้ง
+                        {used ? ` (ใช้ ${used})` : ""}
+                      </span>
+                    )}
+                    <span
+                      className={
+                        avail.state === "open"
+                          ? ""
+                          : avail.state === "upcoming"
+                            ? "text-lemon"
+                            : "text-danger"
+                      }
+                    >
+                      {avail.label}
+                    </span>
                     <span className="ml-auto">
                       {open ? (
                         <span className={badge.amber}>ทำค้างอยู่</span>
                       ) : latest ? (
-                        <span className={latest.passed === false ? badge.red : latest.passed ? badge.green : badge.gray}>
+                        <span
+                          className={
+                            latest.passed === false
+                              ? badge.red
+                              : latest.passed
+                                ? badge.green
+                                : badge.gray
+                          }
+                        >
                           ล่าสุด {formatScore(latest.score)}
                         </span>
                       ) : null}

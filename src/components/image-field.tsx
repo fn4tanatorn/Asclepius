@@ -36,7 +36,9 @@ export function ImageField({
     const supabase = createClient();
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const newPath = `${examId}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("question-images").upload(newPath, file, { contentType: file.type, upsert: false });
+    const { error } = await supabase.storage
+      .from("question-images")
+      .upload(newPath, file, { contentType: file.type, upsert: false });
     setBusy(false);
     if (error) return setErr(`อัปโหลดไม่สำเร็จ: ${error.message}`);
     setPath(newPath);
@@ -48,17 +50,43 @@ export function ImageField({
       <input type="hidden" name="image_path" value={path} />
       {preview && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="" className="max-h-56 rounded-lg border border-zinc-200 object-contain dark:border-zinc-800" />
+        <img
+          src={preview}
+          alt=""
+          className="max-h-56 rounded-lg border border-line object-contain"
+        />
       )}
       <div className="flex items-center gap-3">
-        <input id={id} type="file" accept={ACCEPT} onChange={onPick} disabled={busy} className={`${input} file:mr-3 file:rounded file:border-0 file:bg-zinc-100 file:px-2 file:py-1 file:text-xs dark:file:bg-zinc-800`} />
+        <input
+          id={id}
+          type="file"
+          accept={ACCEPT}
+          onChange={onPick}
+          disabled={busy}
+          className={`${input} file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-2 file:py-1 file:text-xs`}
+        />
         {path && (
-          <button type="button" onClick={() => { setPath(""); setPreview(""); }} className="shrink-0 text-xs text-red-600 hover:underline">
+          <button
+            type="button"
+            onClick={() => {
+              setPath("");
+              setPreview("");
+            }}
+            className="shrink-0 text-xs text-danger hover:underline"
+          >
             เอารูปออก
           </button>
         )}
       </div>
-      <p className="text-xs text-zinc-500">{busy ? "กำลังอัปโหลด…" : err ? <span className="text-red-600">{err}</span> : "jpg / png / webp / gif ไม่เกิน 10MB"}</p>
+      <p className="text-xs text-ink-2">
+        {busy ? (
+          "กำลังอัปโหลด…"
+        ) : err ? (
+          <span className="text-danger">{err}</span>
+        ) : (
+          "jpg / png / webp / gif ไม่เกิน 10MB"
+        )}
+      </p>
     </div>
   );
 }

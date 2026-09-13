@@ -1,23 +1,41 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { btn } from "@/components/ui";
+import { Logo } from "@/components/icons";
 
 export default async function Home() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24 text-center">
-      <div className="space-y-3">
-        <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">MedEd</p>
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">KawaiiMedicine</h1>
-        <p className="max-w-md text-zinc-600 dark:text-zinc-400">แพลตฟอร์มการเรียนแพทยศาสตร์ — วิดีโอบทเรียนและข้อสอบ</p>
+      <div className="space-y-4">
+        <Logo className="mx-auto text-brand" />
+        <p className="text-sm font-semibold uppercase tracking-widest text-pink">
+          MedEd
+        </p>
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <span className="text-pink">Kawaii</span>
+          <span className="text-ink">Medicine</span>
+        </h1>
+        <p className="max-w-md text-ink-2">
+          แพลตฟอร์มการเรียนแพทยศาสตร์ — วิดีโอบทเรียนและข้อสอบ
+        </p>
       </div>
-      <div className="flex gap-3">
-        <Link href="/learn" className="rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300">บทเรียนวิดีโอ</Link>
-        <Link href="/exam" className="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900">ข้อสอบ</Link>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link href="/learn" className={btn.primary}>
+          บทเรียนวิดีโอ
+        </Link>
+        <Link href="/exam" className={btn.secondary}>
+          ข้อสอบ
+        </Link>
       </div>
       {!user && (
-        <Link href="/login" className="text-sm text-zinc-500 underline underline-offset-4">เข้าสู่ระบบ</Link>
+        <Link href="/login" className={btn.link}>
+          เข้าสู่ระบบ
+        </Link>
       )}
     </main>
   );

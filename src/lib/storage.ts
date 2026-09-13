@@ -11,7 +11,10 @@ export async function signQuestionImages(
   const unique = [...new Set(paths.filter((p): p is string => !!p))];
   const map = new Map<string, string>();
   if (unique.length === 0) return map;
-  const { data } = await supabase.storage.from("question-images").createSignedUrls(unique, IMAGE_URL_TTL_SECONDS);
-  for (const r of data ?? []) if (r.path && r.signedUrl && !r.error) map.set(r.path, r.signedUrl);
+  const { data } = await supabase.storage
+    .from("question-images")
+    .createSignedUrls(unique, IMAGE_URL_TTL_SECONDS);
+  for (const r of data ?? [])
+    if (r.path && r.signedUrl && !r.error) map.set(r.path, r.signedUrl);
   return map;
 }

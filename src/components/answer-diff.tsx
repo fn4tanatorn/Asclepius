@@ -7,18 +7,32 @@
 type Op = { ch: string; kind: "same" | "del" | "ins" };
 
 function lcsDiff(a: string[], b: string[]): Op[] {
-  const n = a.length, m = b.length;
+  const n = a.length,
+    m = b.length;
   const eq = (x: string, y: string) => x.toLowerCase() === y.toLowerCase();
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    new Array<number>(m + 1).fill(0),
+  );
   for (let i = n - 1; i >= 0; i--)
     for (let j = m - 1; j >= 0; j--)
-      dp[i][j] = eq(a[i], b[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      dp[i][j] = eq(a[i], b[j])
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
   const ops: Op[] = [];
-  let i = 0, j = 0;
+  let i = 0,
+    j = 0;
   while (i < n && j < m) {
-    if (eq(a[i], b[j])) { ops.push({ ch: a[i], kind: "same" }); i++; j++; }
-    else if (dp[i + 1][j] >= dp[i][j + 1]) { ops.push({ ch: a[i], kind: "del" }); i++; }
-    else { ops.push({ ch: b[j], kind: "ins" }); j++; }
+    if (eq(a[i], b[j])) {
+      ops.push({ ch: a[i], kind: "same" });
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      ops.push({ ch: a[i], kind: "del" });
+      i++;
+    } else {
+      ops.push({ ch: b[j], kind: "ins" });
+      j++;
+    }
   }
   while (i < n) ops.push({ ch: a[i++], kind: "del" });
   while (j < m) ops.push({ ch: b[j++], kind: "ins" });
@@ -27,7 +41,13 @@ function lcsDiff(a: string[], b: string[]): Op[] {
 
 const clean = (s: string) => s.normalize("NFC").trim().replace(/\s+/g, " ");
 
-export function AnswerDiff({ answer, expected }: { answer: string; expected: string }) {
+export function AnswerDiff({
+  answer,
+  expected,
+}: {
+  answer: string;
+  expected: string;
+}) {
   const a = [...clean(answer)];
   const b = [...clean(expected)];
   if (a.length > 300 || b.length > 300) {
@@ -39,17 +59,39 @@ export function AnswerDiff({ answer, expected }: { answer: string; expected: str
   return (
     <span className="inline-grid gap-0.5 font-mono text-sm">
       <span>
-        <span className="mr-2 text-xs text-zinc-500">คุณตอบ</span>
-        {ops.filter((o) => o.kind !== "ins").map((o, k) => (
-          <span key={k} className={o.kind === "del" ? "rounded-sm bg-red-100 font-semibold text-red-700 line-through dark:bg-red-950 dark:text-red-300" : ""}>{o.ch}</span>
-        ))}
+        <span className="mr-2 text-xs text-ink-2">คุณตอบ</span>
+        {ops
+          .filter((o) => o.kind !== "ins")
+          .map((o, k) => (
+            <span
+              key={k}
+              className={
+                o.kind === "del"
+                  ? "rounded-sm bg-danger-soft font-semibold text-danger line-through"
+                  : ""
+              }
+            >
+              {o.ch}
+            </span>
+          ))}
       </span>
       {!identical && (
         <span>
-          <span className="mr-2 text-xs text-zinc-500">เฉลย</span>
-          {ops.filter((o) => o.kind !== "del").map((o, k) => (
-            <span key={k} className={o.kind === "ins" ? "rounded-sm bg-emerald-100 font-semibold text-emerald-800 underline dark:bg-emerald-950 dark:text-emerald-300" : ""}>{o.ch}</span>
-          ))}
+          <span className="mr-2 text-xs text-ink-2">เฉลย</span>
+          {ops
+            .filter((o) => o.kind !== "del")
+            .map((o, k) => (
+              <span
+                key={k}
+                className={
+                  o.kind === "ins"
+                    ? "rounded-sm bg-mint-soft font-semibold text-mint underline"
+                    : ""
+                }
+              >
+                {o.ch}
+              </span>
+            ))}
         </span>
       )}
     </span>

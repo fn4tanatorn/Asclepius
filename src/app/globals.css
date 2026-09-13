@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   KawaiiMedicine design tokens
+   Light: pastel wash on white. Dark: deep navy with the same accents, muted.
+   Use the semantic names (surface, ink, line, brand…) in components, never
+   raw hex, so both themes stay in sync.
+--------------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --bg: #f7f9fe;
+  --bg-wash:
+    radial-gradient(60rem 30rem at -10% -10%, #ffe4ec 0%, transparent 60%),
+    radial-gradient(50rem 28rem at 110% 0%, #dcebff 0%, transparent 60%),
+    radial-gradient(40rem 20rem at 50% 120%, #fff4d6 0%, transparent 60%);
+  --surface: #ffffff;
+  --surface-2: #f3f6fc;
+  --line: #e4e9f4;
+  --ink: #1f2a5a;
+  --ink-2: #5b6688;
+  --muted: #8a93b0;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --brand: #4c8dff; /* primary blue */
+  --brand-ink: #ffffff;
+  --brand-soft: #e6f0ff;
+  --pink: #f26b8a;
+  --pink-soft: #ffe4ec;
+  --mint: #2fb98a;
+  --mint-soft: #e2f7ee;
+  --lemon: #f2b53a;
+  --lemon-soft: #fff4d6;
+  --lavender: #8b7cf6;
+  --lavender-soft: #ece8ff;
+  --danger: #e5484d;
+  --danger-soft: #ffe5e6;
+
+  --shadow-soft:
+    0 6px 24px -12px rgba(31, 42, 90, 0.18), 0 1px 2px rgba(31, 42, 90, 0.06);
+  --shadow-pop: 0 14px 40px -16px rgba(31, 42, 90, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0f1424;
+    --bg-wash:
+      radial-gradient(
+        60rem 30rem at -10% -10%,
+        rgba(242, 107, 138, 0.14) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        50rem 28rem at 110% 0%,
+        rgba(76, 141, 255, 0.16) 0%,
+        transparent 60%
+      );
+    --surface: #171d33;
+    --surface-2: #1f2640;
+    --line: #2a3352;
+    --ink: #eef1fb;
+    --ink-2: #b4bcd6;
+    --muted: #7f89aa;
+
+    --brand: #6ea1ff;
+    --brand-ink: #0f1424;
+    --brand-soft: #1e2c4d;
+    --pink: #ff8aa5;
+    --pink-soft: #3a2230;
+    --mint: #4cd3a3;
+    --mint-soft: #16342b;
+    --lemon: #f5c45a;
+    --lemon-soft: #3a3120;
+    --lavender: #a99cff;
+    --lavender-soft: #2a2647;
+    --danger: #ff6b70;
+    --danger-soft: #3d2124;
+
+    --shadow-soft:
+      0 6px 24px -12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-pop: 0 14px 40px -16px rgba(0, 0, 0, 0.7);
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-pink: var(--pink);
+  --color-pink-soft: var(--pink-soft);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-lemon: var(--lemon);
+  --color-lemon-soft: var(--lemon-soft);
+  --color-lavender: var(--lavender);
+  --color-lavender-soft: var(--lavender-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: var(--font-noto-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-soft: var(--shadow-soft);
+  --shadow-pop: var(--shadow-pop);
+}
+
+html {
+  color-scheme: light dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  background-image: var(--bg-wash);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand-soft);
 }

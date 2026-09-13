@@ -17,7 +17,8 @@ const num = (fd: FormData, k: string) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
-const bool = (fd: FormData, k: string) => fd.get(k) === "on" || fd.get(k) === "true";
+const bool = (fd: FormData, k: string) =>
+  fd.get(k) === "on" || fd.get(k) === "true";
 
 function withMsg(path: string, key: "ok" | "error", msg: string) {
   return `${path}?${key}=${encodeURIComponent(msg)}`;
@@ -30,15 +31,27 @@ export async function createCourse(formData: FormData) {
   const { supabase, user } = await requireStaff("/admin/courses");
   const title = str(formData, "title");
   const slug = slugify(str(formData, "slug") || title);
-  if (!title || !slug) redirect(withMsg("/admin/courses", "error", "กรุณากรอกชื่อคอร์ส"));
+  if (!title || !slug)
+    redirect(withMsg("/admin/courses", "error", "กรุณากรอกชื่อคอร์ส"));
 
   const { data, error } = await supabase
     .from("courses")
-    .insert({ title, slug, description: optStr(formData, "description"), created_by: user.id })
+    .insert({
+      title,
+      slug,
+      description: optStr(formData, "description"),
+      created_by: user.id,
+    })
     .select("id")
     .single();
   if (error || !data) {
-    redirect(withMsg("/admin/courses", "error", error?.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "สร้างคอร์สไม่สำเร็จ"));
+    redirect(
+      withMsg(
+        "/admin/courses",
+        "error",
+        error?.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "สร้างคอร์สไม่สำเร็จ",
+      ),
+    );
   }
   revalidatePath("/admin/courses");
   redirect(`/admin/courses/${data.id}`);
@@ -54,9 +67,21 @@ export async function updateCourse(formData: FormData) {
 
   const { error } = await supabase
     .from("courses")
-    .update({ title, slug, description: optStr(formData, "description"), is_published: bool(formData, "is_published") })
+    .update({
+      title,
+      slug,
+      description: optStr(formData, "description"),
+      is_published: bool(formData, "is_published"),
+    })
     .eq("id", id);
-  if (error) redirect(withMsg(path, "error", error.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "บันทึกไม่สำเร็จ"));
+  if (error)
+    redirect(
+      withMsg(
+        path,
+        "error",
+        error.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "บันทึกไม่สำเร็จ",
+      ),
+    );
 
   revalidatePath("/admin/courses");
   revalidatePath("/learn");
@@ -68,8 +93,13 @@ export async function deleteCourse(formData: FormData) {
   const id = str(formData, "id");
 
   // Remove uploaded files first so the bucket does not keep orphans.
-  const { data: vids } = await supabase.from("videos").select("storage_path").eq("course_id", id);
-  const paths = (vids ?? []).map((v) => v.storage_path).filter((p): p is string => !!p);
+  const { data: vids } = await supabase
+    .from("videos")
+    .select("storage_path")
+    .eq("course_id", id);
+  const paths = (vids ?? [])
+    .map((v) => v.storage_path)
+    .filter((p): p is string => !!p);
   if (paths.length) await supabase.storage.from("videos").remove(paths);
 
   const { error } = await supabase.from("courses").delete().eq("id", id);
@@ -90,7 +120,8 @@ export async function createVideo(formData: FormData) {
   const storagePath = optStr(formData, "storage_path");
   const externalUrl = optStr(formData, "external_url");
   if (!title) redirect(withMsg(path, "error", "กรุณากรอกชื่อวิดีโอ"));
-  if (!storagePath && !externalUrl) redirect(withMsg(path, "error", "ต้องอัปโหลดไฟล์หรือใส่ลิงก์วิดีโอ"));
+  if (!storagePath && !externalUrl)
+    redirect(withMsg(path, "error", "ต้องอัปโหลดไฟล์หรือใส่ลิงก์วิดีโอ"));
 
   const { data: last } = await supabase
     .from("videos")
@@ -150,8 +181,13 @@ export async function deleteVideo(formData: FormData) {
   const courseId = str(formData, "course_id");
   const path = `/admin/courses/${courseId}`;
 
-  const { data: v } = await supabase.from("videos").select("storage_path").eq("id", id).maybeSingle();
-  if (v?.storage_path) await supabase.storage.from("videos").remove([v.storage_path]);
+  const { data: v } = await supabase
+    .from("videos")
+    .select("storage_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (v?.storage_path)
+    await supabase.storage.from("videos").remove([v.storage_path]);
 
   const { error } = await supabase.from("videos").delete().eq("id", id);
   if (error) redirect(withMsg(path, "error", "ลบไม่สำเร็จ"));
@@ -167,7 +203,11 @@ export async function moveVideo(formData: FormData) {
   const dir = str(formData, "dir") === "up" ? -1 : 1;
   const path = `/admin/courses/${courseId}`;
 
-  const { data: vids } = await supabase.from("videos").select("id, position").eq("course_id", courseId).order("position");
+  const { data: vids } = await supabase
+    .from("videos")
+    .select("id, position")
+    .eq("course_id", courseId)
+    .order("position");
   await swapPositions(vids ?? [], id, dir, async (rowId, position) => {
     await supabase.from("videos").update({ position }).eq("id", rowId);
   });
@@ -185,7 +225,8 @@ export async function registerUploadedVideo(input: {
 }): Promise<{ ok: boolean }> {
   const { supabase } = await requireStaff();
   const title = input.title.trim();
-  if (!title || !input.storagePath.startsWith(`${input.courseId}/`)) return { ok: false };
+  if (!title || !input.storagePath.startsWith(`${input.courseId}/`))
+    return { ok: false };
 
   const { data: last } = await supabase
     .from("videos")
@@ -199,7 +240,10 @@ export async function registerUploadedVideo(input: {
     course_id: input.courseId,
     title,
     storage_path: input.storagePath,
-    duration_seconds: input.durationSeconds == null ? null : Math.max(0, Math.round(input.durationSeconds)),
+    duration_seconds:
+      input.durationSeconds == null
+        ? null
+        : Math.max(0, Math.round(input.durationSeconds)),
     position: (last?.position ?? -1) + 1,
     is_published: false,
   });
@@ -215,7 +259,8 @@ export async function createExam(formData: FormData) {
   const { supabase, user } = await requireStaff("/admin/exams");
   const title = str(formData, "title");
   const slug = slugify(str(formData, "slug") || title);
-  if (!title || !slug) redirect(withMsg("/admin/exams", "error", "กรุณากรอกชื่อข้อสอบ"));
+  if (!title || !slug)
+    redirect(withMsg("/admin/exams", "error", "กรุณากรอกชื่อข้อสอบ"));
 
   const { data, error } = await supabase
     .from("exams")
@@ -232,7 +277,13 @@ export async function createExam(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) {
-    redirect(withMsg("/admin/exams", "error", error?.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "สร้างข้อสอบไม่สำเร็จ"));
+    redirect(
+      withMsg(
+        "/admin/exams",
+        "error",
+        error?.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "สร้างข้อสอบไม่สำเร็จ",
+      ),
+    );
   }
   revalidatePath("/admin/exams");
   redirect(`/admin/exams/${data.id}`);
@@ -248,7 +299,8 @@ export async function updateExam(formData: FormData) {
 
   const opensAt = fromBangkokLocalInput(str(formData, "opens_at"));
   const closesAt = fromBangkokLocalInput(str(formData, "closes_at"));
-  if (opensAt && closesAt && closesAt <= opensAt) redirect(withMsg(path, "error", "เวลาปิดต้องอยู่หลังเวลาเปิด"));
+  if (opensAt && closesAt && closesAt <= opensAt)
+    redirect(withMsg(path, "error", "เวลาปิดต้องอยู่หลังเวลาเปิด"));
 
   const publish = bool(formData, "is_published");
   if (publish) {
@@ -273,7 +325,14 @@ export async function updateExam(formData: FormData) {
       is_published: publish,
     })
     .eq("id", id);
-  if (error) redirect(withMsg(path, "error", error.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "บันทึกไม่สำเร็จ"));
+  if (error)
+    redirect(
+      withMsg(
+        path,
+        "error",
+        error.code === "23505" ? "slug นี้ถูกใช้แล้ว" : "บันทึกไม่สำเร็จ",
+      ),
+    );
 
   revalidatePath("/admin/exams");
   revalidatePath("/exam");
@@ -292,12 +351,15 @@ async function validateExamForPublish(
   if (!qs?.length) return "ต้องมีคำถามอย่างน้อย 1 ข้อก่อนเผยแพร่";
   for (const [i, q] of qs.entries()) {
     if (q.kind === "text") {
-      if (q.answer_keys.length === 0) return `ข้อ ${i + 1} ต้องมีเฉลยอย่างน้อย 1 คำตอบ`;
+      if (q.answer_keys.length === 0)
+        return `ข้อ ${i + 1} ต้องมีเฉลยอย่างน้อย 1 คำตอบ`;
       continue;
     }
-    if (q.choices.length < 2) return `ข้อ ${i + 1} ต้องมีตัวเลือกอย่างน้อย 2 ตัว`;
+    if (q.choices.length < 2)
+      return `ข้อ ${i + 1} ต้องมีตัวเลือกอย่างน้อย 2 ตัว`;
     const correct = q.choices.filter((c) => c.is_correct).length;
-    if (correct !== 1) return `ข้อ ${i + 1} ต้องมีคำตอบที่ถูกต้อง 1 ตัวเลือก (ตอนนี้มี ${correct})`;
+    if (correct !== 1)
+      return `ข้อ ${i + 1} ต้องมีคำตอบที่ถูกต้อง 1 ตัวเลือก (ตอนนี้มี ${correct})`;
   }
   return null;
 }
@@ -305,8 +367,13 @@ async function validateExamForPublish(
 export async function deleteExam(formData: FormData) {
   const { supabase } = await requireStaff();
   const id = str(formData, "id");
-  const { data: qs } = await supabase.from("questions").select("image_path").eq("exam_id", id);
-  const imgs = (qs ?? []).map((q) => q.image_path).filter((p): p is string => !!p);
+  const { data: qs } = await supabase
+    .from("questions")
+    .select("image_path")
+    .eq("exam_id", id);
+  const imgs = (qs ?? [])
+    .map((q) => q.image_path)
+    .filter((p): p is string => !!p);
   if (imgs.length) await supabase.storage.from("question-images").remove(imgs);
   const { error } = await supabase.from("exams").delete().eq("id", id);
   if (error) redirect(withMsg(`/admin/exams/${id}`, "error", "ลบไม่สำเร็จ"));
@@ -338,7 +405,9 @@ function readAnswerKeys(formData: FormData) {
     .map((answer, position) => ({ answer, position }));
 }
 
-function readKind(formData: FormData): Database["public"]["Enums"]["question_kind"] {
+function readKind(
+  formData: FormData,
+): Database["public"]["Enums"]["question_kind"] {
   return str(formData, "kind") === "text" ? "text" : "choice";
 }
 
@@ -360,14 +429,21 @@ export async function createQuestion(formData: FormData) {
   const choices = kind === "choice" ? readChoices(formData) : [];
   const keys = kind === "text" ? readAnswerKeys(formData) : [];
   if (kind === "choice") {
-    if (choices.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
-    if (!choices.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+    if (choices.length < 2)
+      redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
+    if (!choices.some((c) => c.is_correct))
+      redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
   } else if (keys.length === 0) {
     redirect(withMsg(path, "error", "กรุณาใส่เฉลยอย่างน้อย 1 คำตอบ"));
   }
 
   const { data: last } = await supabase
-    .from("questions").select("position").eq("exam_id", examId).order("position", { ascending: false }).limit(1).maybeSingle();
+    .from("questions")
+    .select("position")
+    .eq("exam_id", examId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const { data: q, error } = await supabase
     .from("questions")
@@ -386,11 +462,21 @@ export async function createQuestion(formData: FormData) {
 
   const { error: subErr } =
     kind === "choice"
-      ? await supabase.from("choices").insert(choices.map((c) => ({ ...c, question_id: q.id })))
-      : await supabase.from("answer_keys").insert(keys.map((k) => ({ ...k, question_id: q.id })));
+      ? await supabase
+          .from("choices")
+          .insert(choices.map((c) => ({ ...c, question_id: q.id })))
+      : await supabase
+          .from("answer_keys")
+          .insert(keys.map((k) => ({ ...k, question_id: q.id })));
   if (subErr) {
     await supabase.from("questions").delete().eq("id", q.id);
-    redirect(withMsg(path, "error", kind === "choice" ? "เพิ่มตัวเลือกไม่สำเร็จ" : "เพิ่มเฉลยไม่สำเร็จ"));
+    redirect(
+      withMsg(
+        path,
+        "error",
+        kind === "choice" ? "เพิ่มตัวเลือกไม่สำเร็จ" : "เพิ่มเฉลยไม่สำเร็จ",
+      ),
+    );
   }
   revalidatePath(path);
   redirect(withMsg(path, "ok", "เพิ่มคำถามแล้ว") + `#q-${q.id}`);
@@ -404,38 +490,76 @@ export async function updateQuestion(formData: FormData) {
   const stem = str(formData, "stem");
   if (!stem) redirect(withMsg(path, "error", "กรุณากรอกโจทย์"));
 
-  const { data: current } = await supabase.from("questions").select("kind, image_path").eq("id", id).maybeSingle();
+  const { data: current } = await supabase
+    .from("questions")
+    .select("kind, image_path")
+    .eq("id", id)
+    .maybeSingle();
   if (!current) redirect(withMsg(path, "error", "ไม่พบคำถาม"));
   const kind = current.kind; // kind is fixed after creation
   const imagePath = readImagePath(formData, examId);
 
   if (kind === "choice") {
     const ids = formData.getAll("choice_id").map((v) => v.toString());
-    const bodies = formData.getAll("choice_body").map((v) => v.toString().trim());
+    const bodies = formData
+      .getAll("choice_body")
+      .map((v) => v.toString().trim());
     const correctIdx = Number(str(formData, "correct"));
-    const kept = bodies.map((body, i) => ({ id: ids[i] || null, body, is_correct: i === correctIdx })).filter((c) => c.body);
-    if (kept.length < 2) redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
-    if (!kept.some((c) => c.is_correct)) redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
+    const kept = bodies
+      .map((body, i) => ({
+        id: ids[i] || null,
+        body,
+        is_correct: i === correctIdx,
+      }))
+      .filter((c) => c.body);
+    if (kept.length < 2)
+      redirect(withMsg(path, "error", "ต้องมีตัวเลือกอย่างน้อย 2 ตัว"));
+    if (!kept.some((c) => c.is_correct))
+      redirect(withMsg(path, "error", "กรุณาเลือกคำตอบที่ถูกต้อง"));
 
     const keepIds = kept.map((c) => c.id).filter((x): x is string => !!x);
-    const { data: existing } = await supabase.from("choices").select("id").eq("question_id", id);
-    const toDelete = (existing ?? []).map((c) => c.id).filter((cid) => !keepIds.includes(cid));
-    if (toDelete.length) await supabase.from("choices").delete().in("id", toDelete);
+    const { data: existing } = await supabase
+      .from("choices")
+      .select("id")
+      .eq("question_id", id);
+    const toDelete = (existing ?? [])
+      .map((c) => c.id)
+      .filter((cid) => !keepIds.includes(cid));
+    if (toDelete.length)
+      await supabase.from("choices").delete().in("id", toDelete);
     for (const [i, c] of kept.entries()) {
-      if (c.id) await supabase.from("choices").update({ body: c.body, is_correct: c.is_correct, position: i }).eq("id", c.id);
-      else await supabase.from("choices").insert({ question_id: id, body: c.body, is_correct: c.is_correct, position: i });
+      if (c.id)
+        await supabase
+          .from("choices")
+          .update({ body: c.body, is_correct: c.is_correct, position: i })
+          .eq("id", c.id);
+      else
+        await supabase.from("choices").insert({
+          question_id: id,
+          body: c.body,
+          is_correct: c.is_correct,
+          position: i,
+        });
     }
   } else {
     const keys = readAnswerKeys(formData);
-    if (keys.length === 0) redirect(withMsg(path, "error", "กรุณาใส่เฉลยอย่างน้อย 1 คำตอบ"));
+    if (keys.length === 0)
+      redirect(withMsg(path, "error", "กรุณาใส่เฉลยอย่างน้อย 1 คำตอบ"));
     await supabase.from("answer_keys").delete().eq("question_id", id);
-    const { error: kErr } = await supabase.from("answer_keys").insert(keys.map((k) => ({ ...k, question_id: id })));
+    const { error: kErr } = await supabase
+      .from("answer_keys")
+      .insert(keys.map((k) => ({ ...k, question_id: id })));
     if (kErr) redirect(withMsg(path, "error", "บันทึกเฉลยไม่สำเร็จ"));
   }
 
   const { error } = await supabase
     .from("questions")
-    .update({ stem, image_path: imagePath, explanation: optStr(formData, "explanation"), points: num(formData, "points") ?? 1 })
+    .update({
+      stem,
+      image_path: imagePath,
+      explanation: optStr(formData, "explanation"),
+      points: num(formData, "points") ?? 1,
+    })
     .eq("id", id);
   if (error) redirect(withMsg(path, "error", "บันทึกไม่สำเร็จ"));
 
@@ -451,10 +575,15 @@ export async function deleteQuestion(formData: FormData) {
   const id = str(formData, "id");
   const examId = str(formData, "exam_id");
   const path = `/admin/exams/${examId}`;
-  const { data: q } = await supabase.from("questions").select("image_path").eq("id", id).maybeSingle();
+  const { data: q } = await supabase
+    .from("questions")
+    .select("image_path")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("questions").delete().eq("id", id);
   if (error) redirect(withMsg(path, "error", "ลบไม่สำเร็จ"));
-  if (q?.image_path) await supabase.storage.from("question-images").remove([q.image_path]);
+  if (q?.image_path)
+    await supabase.storage.from("question-images").remove([q.image_path]);
   revalidatePath(path);
   redirect(withMsg(path, "ok", "ลบคำถามแล้ว"));
 }
@@ -466,7 +595,11 @@ export async function moveQuestion(formData: FormData) {
   const dir = str(formData, "dir") === "up" ? -1 : 1;
   const path = `/admin/exams/${examId}`;
 
-  const { data: qs } = await supabase.from("questions").select("id, position").eq("exam_id", examId).order("position");
+  const { data: qs } = await supabase
+    .from("questions")
+    .select("id, position")
+    .eq("exam_id", examId)
+    .order("position");
   await swapPositions(qs ?? [], id, dir, async (rowId, position) => {
     await supabase.from("questions").update({ position }).eq("id", rowId);
   });
@@ -494,13 +627,19 @@ async function swapPositions(
 // ---------------------------------------------------------------------------
 export async function updateUserRole(formData: FormData) {
   const { supabase, role, user } = await requireStaff("/admin/users");
-  if (role !== "admin") redirect(withMsg("/admin/users", "error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
+  if (role !== "admin")
+    redirect(withMsg("/admin/users", "error", "เฉพาะผู้ดูแลระบบเท่านั้น"));
   const id = str(formData, "id");
   const newRole = str(formData, "role") as Role;
-  if (!["student", "instructor", "admin"].includes(newRole)) redirect(withMsg("/admin/users", "error", "บทบาทไม่ถูกต้อง"));
-  if (id === user.id && newRole !== "admin") redirect(withMsg("/admin/users", "error", "ไม่สามารถลดสิทธิ์ตัวเองได้"));
+  if (!["student", "instructor", "admin"].includes(newRole))
+    redirect(withMsg("/admin/users", "error", "บทบาทไม่ถูกต้อง"));
+  if (id === user.id && newRole !== "admin")
+    redirect(withMsg("/admin/users", "error", "ไม่สามารถลดสิทธิ์ตัวเองได้"));
 
-  const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", id);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role: newRole })
+    .eq("id", id);
   if (error) redirect(withMsg("/admin/users", "error", "บันทึกไม่สำเร็จ"));
   revalidatePath("/admin/users");
   redirect(withMsg("/admin/users", "ok", "เปลี่ยนบทบาทแล้ว"));
@@ -520,19 +659,36 @@ export async function bulkCreateTextQuestions(input: {
   const { supabase } = await requireStaff();
   const stem = input.stem.trim();
   if (!stem) return { ok: false, error: "กรุณากรอกโจทย์" };
-  const points = Number.isFinite(input.points) && input.points > 0 ? input.points : 1;
+  const points =
+    Number.isFinite(input.points) && input.points > 0 ? input.points : 1;
 
   const items = input.items
     .map((it) => ({
       imagePath: it.imagePath,
-      answers: [...new Set(it.answers.map((a) => a.normalize("NFC").trim()).filter(Boolean))],
+      answers: [
+        ...new Set(
+          it.answers.map((a) => a.normalize("NFC").trim()).filter(Boolean),
+        ),
+      ],
     }))
-    .filter((it) => it.imagePath.startsWith(`${input.examId}/`) && !it.imagePath.includes("..") && it.answers.length > 0);
-  if (items.length === 0) return { ok: false, error: "ไม่มีรายการที่นำเข้าได้" };
-  if (items.length > 200) return { ok: false, error: "นำเข้าได้ครั้งละไม่เกิน 200 ข้อ" };
+    .filter(
+      (it) =>
+        it.imagePath.startsWith(`${input.examId}/`) &&
+        !it.imagePath.includes("..") &&
+        it.answers.length > 0,
+    );
+  if (items.length === 0)
+    return { ok: false, error: "ไม่มีรายการที่นำเข้าได้" };
+  if (items.length > 200)
+    return { ok: false, error: "นำเข้าได้ครั้งละไม่เกิน 200 ข้อ" };
 
   const { data: last } = await supabase
-    .from("questions").select("position").eq("exam_id", input.examId).order("position", { ascending: false }).limit(1).maybeSingle();
+    .from("questions")
+    .select("position")
+    .eq("exam_id", input.examId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
   const base = (last?.position ?? -1) + 1;
 
   const { data: qs, error } = await supabase
@@ -553,11 +709,21 @@ export async function bulkCreateTextQuestions(input: {
 
   const byPos = new Map(qs.map((q) => [q.position, q.id]));
   const keys = items.flatMap((it, i) =>
-    it.answers.map((answer, position) => ({ question_id: byPos.get(base + i)!, answer, position })),
+    it.answers.map((answer, position) => ({
+      question_id: byPos.get(base + i)!,
+      answer,
+      position,
+    })),
   );
   const { error: kErr } = await supabase.from("answer_keys").insert(keys);
   if (kErr) {
-    await supabase.from("questions").delete().in("id", qs.map((q) => q.id));
+    await supabase
+      .from("questions")
+      .delete()
+      .in(
+        "id",
+        qs.map((q) => q.id),
+      );
     return { ok: false, error: "บันทึกเฉลยไม่สำเร็จ" };
   }
 
