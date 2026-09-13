@@ -1,0 +1,71 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { requireStaff } from "@/lib/auth/require-user";
+import { badge, btn, card, input, label } from "@/components/ui";
+import { Flash } from "@/components/flash";
+import { createExam } from "../actions";
+
+export const metadata: Metadata = { title: "จัดการข้อสอบ" };
+
+export default async function AdminExamsPage({ searchParams }: PageProps<"/admin/exams">) {
+  const sp = await searchParams;
+  const { supabase } = await requireStaff("/admin/exams");
+  const [{ data: exams }, { data: courses }] = await Promise.all([
+    supabase
+      .from("exams")
+      .select("id, slug, title, is_published, time_limit_minutes, passing_score, questions(id), courses(title), exam_attempts(id)")
+      .order("created_at", { ascending: false }),
+    supabase.from("courses").select("id, title").order("title"),
+  ]);
+
+  return (
+    <main className="space-y-8">
+      <h1 className="text-2xl font-semibold">ข้อสอบ</h1>
+      <Flash ok={sp.ok} error={sp.error} />
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
+        <section>
+          {!exams?.length ? (
+            <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 dark:border-zinc-700">ยังไม่มีข้อสอบ สร้างจากฟอร์มด้านข้าง</p>
+          ) : (
+            <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+              {exams.map((e) => (
+                <li key={e.id}>
+                  <Link href={`/admin/exams/${e.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                    <span className="flex-1">
+                      <span className="block font-medium">{e.title}</span>
+                      <span className="block text-xs text-zinc-500">
+                        {e.courses?.title ? `${e.courses.title} · ` : ""}{e.questions.length} ข้อ · ส่งแล้ว {e.exam_attempts.length} ครั้ง
+                      </span>
+                    </span>
+                    <span className={e.is_published ? badge.green : badge.gray}>{e.is_published ? "เผยแพร่" : "ฉบับร่าง"}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <aside className={card}>
+          <h2 className="font-semibold">สร้างข้อสอบใหม่</h2>
+          <form action={createExam} className="mt-4 space-y-3">
+            <label className={label}><span>ชื่อข้อสอบ</span><input name="title" required className={input} /></label>
+            <label className={label}><span>slug (ไม่บังคับ)</span><input name="slug" className={input} /></label>
+            <label className={label}>
+              <span>คอร์สที่เกี่ยวข้อง</span>
+              <select name="course_id" className={input} defaultValue="">
+                <option value="">— ไม่ระบุ —</option>
+                {courses?.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className={label}><span>เวลา (นาที)</span><input name="time_limit_minutes" type="number" min={1} className={input} /></label>
+              <label className={label}><span>เกณฑ์ผ่าน (%)</span><input name="passing_score" type="number" min={0} max={100} step="0.01" className={input} /></label>
+            </div>
+            <button type="submit" className={`${btn.primary} w-full`}>สร้างข้อสอบ</button>
+          </form>
+        </aside>
+      </div>
+    </main>
+  );
+}

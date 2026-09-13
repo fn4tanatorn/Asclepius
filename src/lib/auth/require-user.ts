@@ -19,3 +19,24 @@ export async function requireUser(nextPath?: string) {
 
   return { supabase, user };
 }
+
+/**
+ * Same as requireUser, but also requires role instructor or admin.
+ * Non-staff users are sent back to /learn. RLS still enforces every
+ * query; this is the UI-level gate.
+ */
+export async function requireStaff(nextPath?: string) {
+  const { supabase, user } = await requireUser(nextPath);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .single();
+
+  const role = profile?.role ?? "student";
+  if (role !== "instructor" && role !== "admin") {
+    redirect("/learn?error=forbidden");
+  }
+
+  return { supabase, user, role, fullName: profile?.full_name ?? "" };
+}

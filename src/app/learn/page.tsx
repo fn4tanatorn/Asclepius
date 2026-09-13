@@ -1,33 +1,75 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireUser } from "@/lib/auth/require-user";
+import { card, badge } from "@/components/ui";
 
 export const metadata: Metadata = { title: "บทเรียนวิดีโอ" };
 
-export default async function LearnPage() {
+export default async function LearnPage({ searchParams }: PageProps<"/learn">) {
   const { supabase, user } = await requireUser("/learn");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", user.id)
-    .single();
+  const sp = await searchParams;
+  const forbidden = sp.error === "forbidden";
+
+  const [{ data: courses }, { data: progress }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, slug, title, description, is_published, videos(id, is_published)")
+      .eq("is_published", true)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("video_progress")
+      .select("video_id, completed")
+      .eq("user_id", user.id)
+      .eq("completed", true),
+  ]);
+
+  const done = new Set((progress ?? []).map((p) => p.video_id));
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">บทเรียนวิดีโอ</h1>
-        <form action="/auth/signout" method="post">
-          <button className="text-sm text-zinc-500 underline underline-offset-4">
-            ออกจากระบบ
-          </button>
-        </form>
-      </header>
-      <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-        เข้าสู่ระบบเป็น <span className="font-medium">{profile?.full_name || user.email}</span>{" "}
-        ({profile?.role ?? "student"})
-      </p>
-      <p className="mt-10 rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 dark:border-zinc-700">
-        ยังไม่มีคอร์ส — จะแสดงรายการคอร์สที่นี่
-      </p>
+    <main>
+      <h1 className="text-2xl font-semibold">บทเรียนวิดีโอ</h1>
+      {forbidden && (
+        <p role="alert" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+          หน้าจัดการใช้ได้เฉพาะผู้สอน/ผู้ดูแลระบบเท่านั้น
+        </p>
+      )}
+
+      {!courses?.length ? (
+        <p className="mt-10 rounded-lg border border-dashed border-zinc-300 p-8 text-center text-zinc-500 dark:border-zinc-700">
+          ยังไม่มีคอร์สที่เผยแพร่
+        </p>
+      ) : (
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+          {courses.map((c) => {
+            const vids = c.videos.filter((v) => v.is_published);
+            const finished = vids.filter((v) => done.has(v.id)).length;
+            const pct = vids.length ? Math.round((finished / vids.length) * 100) : 0;
+            return (
+              <li key={c.id}>
+                <Link href={`/learn/${c.slug}`} className={`${card} block h-full hover:border-zinc-400 dark:hover:border-zinc-600`}>
+                  <h2 className="font-semibold">{c.title}</h2>
+                  {c.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{c.description}</p>
+                  )}
+                  <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
+                    <span>{vids.length} วิดีโอ</span>
+                    {vids.length > 0 && (
+                      <span className={pct === 100 ? badge.green : badge.gray}>
+                        {pct === 100 ? "เรียนจบแล้ว" : `ดูแล้ว ${finished}/${vids.length}`}
+                      </span>
+                    )}
+                  </div>
+                  {vids.length > 0 && (
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                      <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </main>
   );
 }
