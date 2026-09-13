@@ -613,6 +613,7 @@ export type Database = {
         Args: { p_answer: string; p_key: string }
         Returns: number
       }
+      current_user_email: { Args: never; Returns: string }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
