@@ -68,7 +68,10 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
   // ---- Result view ----
   if (attempt.submitted_at) {
     // Answer keys are only reachable through this RPC (own submitted attempt + exam allows reveal).
-    const { data: review } = await supabase.rpc("get_attempt_review", { p_attempt_id: attempt.id });
+    const [{ data: review }, { data: feedback }] = await Promise.all([
+      supabase.rpc("get_attempt_review", { p_attempt_id: attempt.id }),
+      supabase.from("exam_feedback").select("id").eq("attempt_id", attempt.id).maybeSingle(),
+    ]);
     const reviewByQ = new Map((review ?? []).map((r) => [r.question_id, r]));
     const reveal = (review?.length ?? 0) > 0;
     return (
@@ -78,6 +81,17 @@ export default async function AttemptPage({ params, searchParams }: PageProps<"/
           <h1 className="mt-2 text-2xl font-semibold">ผลการสอบ</h1>
         </div>
 
+        {sp.feedback === "thanks" && (
+          <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+            ขอบคุณสำหรับ feedback ครับ
+          </p>
+        )}
+        {isOwner && !feedback && sp.feedback !== "thanks" && (
+          <p className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+            <span>ยังไม่ได้ให้ feedback สำหรับข้อสอบครั้งนี้ ใช้เวลาไม่ถึงนาที</span>
+            <Link href={`/exam/${exam.slug}/attempt/${attempt.id}/feedback`} className="font-medium underline underline-offset-4">ให้ feedback</Link>
+          </p>
+        )}
         <section className={`${card} flex flex-wrap items-center gap-6`}>
           <div>
             <p className="text-sm text-zinc-500">คะแนน</p>

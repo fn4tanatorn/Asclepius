@@ -90,6 +90,35 @@ export async function submitAttempt(formData: FormData) {
   if (!attempt.submitted_at) {
     const { error } = await supabase.rpc("submit_exam_attempt", { p_attempt_id: attempt.id });
     if (error) redirect(`/exam/${slug}/attempt/${attempt.id}?error=submit`);
+    redirect(`/exam/${slug}/attempt/${attempt.id}/feedback`);
   }
   redirect(`/exam/${slug}/attempt/${attempt.id}`);
+}
+
+const cleanText = (v: FormDataEntryValue | null, max: number) => {
+  const t = (v?.toString() ?? "").normalize("NFC").trim();
+  return t ? t.slice(0, max) : null;
+};
+
+/** Post-exam feedback (one per attempt). Empty form = skip. */
+export async function submitFeedback(formData: FormData) {
+  const attemptId = formData.get("attemptId")?.toString() ?? "";
+  const { supabase, user, attempt } = await loadOwnAttempt(attemptId);
+  const slug = attempt.exams?.slug ?? "";
+  const resultPath = `/exam/${slug}/attempt/${attempt.id}`;
+  if (!attempt.submitted_at) redirect(resultPath);
+
+  const examComment = cleanText(formData.get("exam_comment"), 2000);
+  const generalComment = cleanText(formData.get("general_comment"), 2000);
+  if (!examComment && !generalComment) redirect(resultPath);
+
+  const { error } = await supabase.from("exam_feedback").insert({
+    attempt_id: attempt.id,
+    exam_id: attempt.exam_id,
+    user_id: user.id,
+    exam_comment: examComment,
+    general_comment: generalComment,
+  });
+  if (error && error.code !== "23505") redirect(`${resultPath}/feedback?error=1`);
+  redirect(`${resultPath}?feedback=thanks`);
 }

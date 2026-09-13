@@ -217,6 +217,58 @@ export type Database = {
           },
         ]
       }
+      exam_feedback: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          exam_comment: string | null
+          exam_id: string
+          general_comment: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          exam_comment?: string | null
+          exam_id: string
+          general_comment?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          exam_comment?: string | null
+          exam_id?: string
+          general_comment?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_feedback_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: true
+            referencedRelation: "exam_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_feedback_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exams: {
         Row: {
           closes_at: string | null

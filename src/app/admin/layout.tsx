@@ -7,6 +7,7 @@ const ADMIN_NAV = [
   { href: "/admin/courses", label: "คอร์ส & วิดีโอ" },
   { href: "/admin/exams", label: "ข้อสอบ" },
   { href: "/admin/results", label: "ผลสอบ" },
+  { href: "/admin/feedback", label: "Feedback" },
   { href: "/admin/users", label: "ผู้ใช้" },
 ];
 

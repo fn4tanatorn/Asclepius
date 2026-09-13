@@ -9,12 +9,13 @@ export const metadata: Metadata = { title: "จัดการระบบ" };
 export default async function AdminHome() {
   const { supabase, role } = await requireStaff("/admin");
 
-  const [courses, videos, exams, attempts, students, recent] = await Promise.all([
+  const [courses, videos, exams, attempts, students, feedback, recent] = await Promise.all([
     supabase.from("courses").select("id", { count: "exact", head: true }),
     supabase.from("videos").select("id", { count: "exact", head: true }),
     supabase.from("exams").select("id", { count: "exact", head: true }),
     supabase.from("exam_attempts").select("id", { count: "exact", head: true }).not("submitted_at", "is", null),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("exam_feedback").select("id", { count: "exact", head: true }),
     supabase
       .from("exam_attempts")
       .select("id, score, passed, submitted_at, exams(slug, title), profiles(full_name, email, line_name)")
@@ -29,6 +30,7 @@ export default async function AdminHome() {
     { label: "ข้อสอบ", value: exams.count ?? 0, href: "/admin/exams" },
     { label: "ครั้งที่ส่งสอบ", value: attempts.count ?? 0, href: "/admin/results" },
     { label: "ผู้ใช้", value: students.count ?? 0, href: "/admin/users" },
+    { label: "Feedback", value: feedback.count ?? 0, href: "/admin/feedback" },
   ];
 
   return (
@@ -38,7 +40,7 @@ export default async function AdminHome() {
         <p className="mt-1 text-sm text-zinc-500">บทบาทของคุณ: {role === "admin" ? "ผู้ดูแลระบบ" : "ผู้สอน"}</p>
       </div>
 
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (
           <li key={s.label}>
             <Link href={s.href} className={`${card} block hover:border-zinc-400 dark:hover:border-zinc-600`}>
