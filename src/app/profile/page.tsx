@@ -16,25 +16,32 @@ export default async function ProfilePage({
   const sp = await searchParams;
   const { supabase, user } = await requireUser("/profile");
 
-  const [profile, { data: courses }, { data: progress }, { data: attempts }] =
-    await Promise.all([
-      getProfile(user.id),
-      supabase
-        .from("courses")
-        .select("id, videos(id, is_published)")
-        .eq("is_published", true),
-      supabase
-        .from("video_progress")
-        .select("video_id")
-        .eq("user_id", user.id)
-        .eq("completed", true),
-      supabase
-        .from("exam_attempts")
-        .select("id, score, passed, submitted_at, exams(slug, title)")
-        .eq("user_id", user.id)
-        .not("submitted_at", "is", null)
-        .order("submitted_at", { ascending: false }),
-    ]);
+  const [
+    profile,
+    { data: courses },
+    { data: progress },
+    { data: attempts },
+    { data: streakRows },
+  ] = await Promise.all([
+    getProfile(user.id),
+    supabase
+      .from("courses")
+      .select("id, videos(id, is_published)")
+      .eq("is_published", true),
+    supabase
+      .from("video_progress")
+      .select("video_id")
+      .eq("user_id", user.id)
+      .eq("completed", true),
+    supabase
+      .from("exam_attempts")
+      .select("id, score, passed, submitted_at, exams(slug, title)")
+      .eq("user_id", user.id)
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false }),
+    supabase.rpc("get_my_streak"),
+  ]);
+  const streak = streakRows?.[0];
 
   const doneVideoIds = new Set((progress ?? []).map((p) => p.video_id));
   let totalVideos = 0;
@@ -68,12 +75,22 @@ export default async function ProfilePage({
         <Flash ok={sp.ok} error={sp.error} />
 
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold">ผลการเรียนของฉัน</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-semibold">ผลการเรียนของฉัน</h2>
+            {!!streak?.current_streak && (
+              <span className={badge.amber} title="วันที่เรียนหรือทำข้อสอบต่อเนื่องกัน">
+                🔥 ต่อเนื่อง {streak.current_streak} วัน
+              </span>
+            )}
+          </div>
           <p className="text-sm text-ink-2">
             คอร์สที่เรียนจบ {coursesFinished}/{totalCourses} · วิดีโอที่ดูแล้ว{" "}
             {watchedVideos}/{totalVideos} · สอบผ่าน {examsPassed}/
             {scores.length} ครั้ง
             {avgScore != null && <> · เฉลี่ย {formatScore(avgScore)}</>}
+            {!!streak?.longest_streak && (
+              <> · สถิติต่อเนื่องสูงสุด {streak.longest_streak} วัน</>
+            )}
           </p>
 
           {!attempts?.length ? (
