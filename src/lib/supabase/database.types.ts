@@ -660,7 +660,7 @@ export type Database = {
         Args: never
         Returns: {
           current_streak: number
-          last_active_date: string | null
+          last_active_date: string
           longest_streak: number
         }[]
       }
