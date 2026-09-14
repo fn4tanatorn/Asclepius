@@ -76,6 +76,7 @@ select is(
 select throws_ok(
   format('insert into public.user_activity (user_id, activity_date) values (%L::uuid, current_date)', :'student_a'),
   '42501',
+  'permission denied for table user_activity',
   'students cannot insert into user_activity directly (no grant, only the trigger can write)'
 );
 
