@@ -457,6 +457,32 @@ export type Database = {
           },
         ]
       }
+      user_activity: {
+        Row: {
+          activity_date: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_date: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_issue_reports: {
         Row: {
           created_at: string
@@ -628,6 +654,14 @@ export type Database = {
           correct_choice_id: string
           distance: number
           question_id: string
+        }[]
+      }
+      get_my_streak: {
+        Args: never
+        Returns: {
+          current_streak: number
+          last_active_date: string | null
+          longest_streak: number
         }[]
       }
       is_staff: { Args: never; Returns: boolean }
